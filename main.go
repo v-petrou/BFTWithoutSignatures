@@ -4,29 +4,29 @@ import (
 	messenger "BFTWithoutSignatures/app"
 	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
+	"BFTWithoutSignatures/variables"
 	"SSBFT/app"
-	"SSBFT/variables"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 )
 
-// Initialize - Initializer method
-func Initialize(id int, n int, t int, k int, scenario config.Scenario) {
-	variables.Initialise(id, n, t, k)
+// Initializer method
+func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
+	variables.Initialize(id, n, t, clients)
 
-	config.InitializeLocal(n)
-	config.InitializeIp(n)
+	config.InitializeLocal()
+	config.InitializeIP()
 	config.InitializeScenario(scenario)
 
 	logger.InitializeLogger()
 	logger.OutLogger.Println(
 		"N", variables.N,
-		"ID", variables.Id,
+		"ID", variables.ID,
 		"F", variables.F,
 		"Threshold T", variables.T,
-		"Client Size", variables.K,
+		"Client Size", variables.Clients,
 	)
 
 	messenger.InitializeMessenger()
@@ -45,8 +45,8 @@ func Initialize(id int, n int, t int, k int, scenario config.Scenario) {
 				if i == id {
 					continue
 				}
-				messenger.RcvSockets[i].Close()
-				messenger.SndSockets[i].Close()
+				messenger.ReceiveSockets[i].Close()
+				messenger.SendSockets[i].Close()
 			}
 			os.Exit(0)
 		}
@@ -55,26 +55,23 @@ func Initialize(id int, n int, t int, k int, scenario config.Scenario) {
 
 func main() {
 	done := make(chan interface{})
+
 	args := os.Args[1:]
 	if len(args) < 5 {
 		log.Fatal("Arguments should be '<id> <n> <f> <k> <scenario>")
 	}
+
 	id, _ := strconv.Atoi(args[0])
 	n, _ := strconv.Atoi(args[1])
 	t, _ := strconv.Atoi(args[2])
-	k, _ := strconv.Atoi(args[3])
+	clients, _ := strconv.Atoi(args[3])
 	tmp, _ := strconv.Atoi(args[4])
 	scenario := config.Scenario(tmp)
 
-	Initialize(id, n, t, k, scenario)
+	initializer(id, n, t, clients, scenario)
+
+	// Initialize the message transmition and handling for the servers
 	messenger.Subscribe()
-
-	if config.TestCase != config.NON_SS {
-		go app.FailDetector()
-		go app.ViewChangeMonitor()
-		go app.CoordinatingAutomaton()
-
-	}
 	go messenger.TransmitMessages()
 	go app.ByzantineReplication()
 

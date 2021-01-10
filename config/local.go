@@ -1,61 +1,57 @@
 package config
 
 import (
-	"SSBFT/variables"
+	"BFTWithoutSignatures/variables"
 	"strconv"
 )
 
-var RepAddresses map[string]int
-var ReqAddresses map[string]int
-var ServerAddresses map[string]int
-var ResponseAddresses map[string]int
+var (
+	// RepAddresses - Initialize the address of local Rep sockets
+	RepAddresses map[int]string
 
-func InitializeLocal(n int) {
-	RepAddresses = make(map[string]int, n)
-	ReqAddresses = make(map[string]int, n)
-	ServerAddresses = make(map[string]int, variables.K)
-	ResponseAddresses = make(map[string]int, variables.K)
-	for i := 0; i < n; i++ {
-		RepAddresses["tcp://localhost:"+strconv.Itoa(4000+variables.Id*100+i)] = i
-		ReqAddresses["tcp://localhost:"+strconv.Itoa(4000+i*100+variables.Id)] = i
+	// ReqAddresses - Initialize the address of local Req sockets
+	ReqAddresses map[int]string
+
+	// ServerAddresses - Initialize the address of local Server sockets
+	ServerAddresses map[int]string
+
+	// ResponseAddresses - Initialize the address of local Response sockets
+	ResponseAddresses map[int]string
+)
+
+// InitializeLocal - Initializes system locally.
+func InitializeLocal() {
+	RepAddresses = make(map[int]string, variables.N)
+	ReqAddresses = make(map[int]string, variables.N)
+	ServerAddresses = make(map[int]string, variables.Clients)
+	ResponseAddresses = make(map[int]string, variables.Clients)
+
+	for i := 0; i < variables.N; i++ {
+		RepAddresses[i] = "tcp://localhost:" + strconv.Itoa(4000+variables.ID*100+i)
+		ReqAddresses[i] = "tcp://localhost:" + strconv.Itoa(4000+i*100+variables.ID)
 	}
-	for i := 0; i < variables.K; i++ {
-		ServerAddresses["tcp://*:"+strconv.Itoa(7000+variables.Id*100+i)] = i
-		ResponseAddresses["tcp://*:"+strconv.Itoa(10000+variables.Id*100+i)] = i
+	for i := 0; i < variables.Clients; i++ {
+		ServerAddresses[i] = "tcp://*:" + strconv.Itoa(7000+variables.ID*100+i)
+		ResponseAddresses[i] = "tcp://*:" + strconv.Itoa(10000+variables.ID*100+i)
 	}
 }
 
+// GetRepAddressLocal - Returns the local REP address of the server with that id
 func GetRepAddressLocal(id int) string {
-	for key, value := range RepAddresses {
-		if value == id {
-			return key
-		}
-	}
-	return ""
+	return RepAddresses[id]
 }
 
-func GetResponseAddressLocal(id int) string {
-	for key, value := range ResponseAddresses {
-		if value == id {
-			return key
-		}
-	}
-	return ""
-}
-func GetServerAddressLocal(id int) string {
-	for key, value := range ServerAddresses {
-		if value == id {
-			return key
-		}
-	}
-	return ""
-}
-
+// GetReqAddressLocal - Returns the local REQ address of the server with that id
 func GetReqAddressLocal(id int) string {
-	for key, value := range ReqAddresses {
-		if value == id {
-			return key
-		}
-	}
-	return ""
+	return ReqAddresses[id]
+}
+
+// GetServerAddressLocal - Returns the local Server address of the server with that id
+func GetServerAddressLocal(id int) string {
+	return ServerAddresses[id]
+}
+
+// GetResponseAddressLocal - Returns the local Response address of the server with that id
+func GetResponseAddressLocal(id int) string {
+	return ResponseAddresses[id]
 }

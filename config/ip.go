@@ -1,7 +1,7 @@
 package config
 
 import (
-	"SSBFT/variables"
+	"BFTWithoutSignatures/variables"
 	"strconv"
 )
 
@@ -31,57 +31,53 @@ var addresses = []string{
 	"195.113.161.13",
 }
 
-var RepAddressesIp map[string]int
-var ReqAddressesIp map[string]int
-var ServerAddressesIp map[string]int
-var ResponseAddressesIp map[string]int
+var (
+	// RepAddressesIP - Initialize the address of IP REP sockets
+	RepAddressesIP map[int]string
 
-func InitializeIp(n int) {
-	RepAddressesIp = make(map[string]int, n)
-	ReqAddressesIp = make(map[string]int, n)
-	ServerAddressesIp = make(map[string]int, variables.K)
-	ResponseAddressesIp = make(map[string]int, variables.K)
-	for i := 0; i < n; i++ {
-		RepAddressesIp["tcp://*:"+strconv.Itoa(4000+i)] = i
-		ReqAddressesIp["tcp://"+addresses[i]+":"+strconv.Itoa(4000+i)] = i
+	// ReqAddressesIP - Initialize the address of IP REQ sockets
+	ReqAddressesIP map[int]string
+
+	// ServerAddressesIP - Initialize the address of IP Server sockets
+	ServerAddressesIP map[int]string
+
+	// ResponseAddressesIP - Initialize the address of IP Response sockets
+	ResponseAddressesIP map[int]string
+)
+
+// InitializeIP - Initializes system with ips.
+func InitializeIP() {
+	RepAddressesIP = make(map[int]string, variables.N)
+	ReqAddressesIP = make(map[int]string, variables.N)
+	ServerAddressesIP = make(map[int]string, variables.Clients)
+	ResponseAddressesIP = make(map[int]string, variables.Clients)
+
+	for i := 0; i < variables.N; i++ {
+		RepAddressesIP[i] = "tcp://*:" + strconv.Itoa(4000+i)
+		ReqAddressesIP[i] = "tcp://" + addresses[i] + ":" + strconv.Itoa(4000+i)
 	}
-	for i := 0; i < variables.K; i++ {
-		ServerAddressesIp["tcp://*:"+strconv.Itoa(7000+variables.Id*100+i)] = i
-		ResponseAddressesIp["tcp://*:"+strconv.Itoa(10000+variables.Id*100+i)] = i
+	for i := 0; i < variables.Clients; i++ {
+		ServerAddressesIP[i] = "tcp://*:" + strconv.Itoa(7000+variables.ID*100+i)
+		ResponseAddressesIP[i] = "tcp://*:" + strconv.Itoa(10000+variables.ID*100+i)
 	}
 }
 
+// GetRepAddress - Returns the IP REP address of the server with that id
 func GetRepAddress(id int) string {
-	for key, value := range RepAddressesIp {
-		if value == id {
-			return key
-		}
-	}
-	return ""
+	return RepAddressesIP[id]
 }
 
-func GetResponseAddress(id int) string {
-	for key, value := range ResponseAddressesIp {
-		if value == id {
-			return key
-		}
-	}
-	return ""
-}
-func GetServerAddress(id int) string {
-	for key, value := range ServerAddressesIp {
-		if value == id {
-			return key
-		}
-	}
-	return ""
-}
-
+// GetReqAddress - Returns the IP REQ address of the server with that id
 func GetReqAddress(id int) string {
-	for key, value := range ReqAddressesIp {
-		if value == id {
-			return key
-		}
-	}
-	return ""
+	return ReqAddressesIP[id]
+}
+
+// GetServerAddress - Returns the IP Server address of the server with that id
+func GetServerAddress(id int) string {
+	return ServerAddressesIP[id]
+}
+
+// GetResponseAddress - Returns the IP Response address of the server with that id
+func GetResponseAddress(id int) string {
+	return ResponseAddressesIP[id]
 }

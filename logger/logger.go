@@ -1,18 +1,21 @@
 package logger
 
 import (
-	"SSBFT/config"
-	"SSBFT/variables"
+	"BFTWithoutSignatures/config"
+	"BFTWithoutSignatures/variables"
 	"log"
 	"os"
 	"strconv"
 	"time"
 )
 
+// OutLogger - Log the outputs
 var OutLogger *log.Logger
 
+// ErrLogger - Log the errors
 var ErrLogger *log.Logger
 
+// InitializeLogger - Initializes the loggers
 func InitializeLogger() {
 	outFolder := "./logs/"
 	errFolder := "./logs/"
@@ -41,8 +44,11 @@ func InitializeLogger() {
 		outFolder += "non_ss/out/"
 		errFolder += "non_ss/err/"
 	}
-	output := outFolder + "output_" + strconv.Itoa(variables.Id) + "_" + time.Now().UTC().String() + ".txt"
-	errorf := errFolder + "err_" + strconv.Itoa(variables.Id) + "_" + time.Now().UTC().String() + ".txt"
+	output := outFolder + "output_" + strconv.Itoa(variables.ID) + "_" + time.Now().UTC().String() +
+		".txt"
+	errorf := errFolder + "err_" + strconv.Itoa(variables.ID) + "_" + time.Now().UTC().String() +
+		".txt"
+
 	outFile, err := os.Create(output)
 	if err != nil {
 		log.Fatal(err)

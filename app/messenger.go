@@ -1,13 +1,12 @@
 package messenger
 
 import (
-	"SSBFT/config"
-	"SSBFT/logger"
+	"BFTWithoutSignatures/config"
+	"BFTWithoutSignatures/logger"
+	"BFTWithoutSignatures/variables"
 	"SSBFT/types"
-	"SSBFT/variables"
 	"bytes"
 	"encoding/gob"
-	"log"
 	"strings"
 
 	"github.com/pebbe/zmq4"
@@ -17,11 +16,11 @@ var (
 	// Context to initialize sockets
 	Context *zmq4.Context
 
-	// RcvSockets -Receive messages from other
-	RcvSockets map[int]*zmq4.Socket
+	// ReceiveSockets - Receive messages from other servers
+	ReceiveSockets map[int]*zmq4.Socket
 
-	// SndSockets - Send messages to other servers
-	SndSockets map[int]*zmq4.Socket
+	// SendSockets - Send messages to other servers
+	SendSockets map[int]*zmq4.Socket
 
 	// ServerSockets - Get the client requests
 	ServerSockets map[int]*zmq4.Socket
@@ -29,11 +28,10 @@ var (
 	// ResponseSockets - Send responses to clients
 	ResponseSockets map[int]*zmq4.Socket
 
-	SendRecvSync map[int]chan interface{} // Probably not needed
+	// SendRecvSync - Probably not needed
+	SendRecvSync map[int]chan interface{}
 
-	//requestsChan map[int]chan interface{}
-
-	messageChan = make(chan struct {
+	messageChannel = make(chan struct {
 		Message types.Message
 		To      int
 	})
@@ -53,7 +51,7 @@ var (
 		From  int
 	}, 100)
 
-	RequestChan = make(chan *types.ClientMessage, 100)
+	RequestChannel = make(chan *types.ClientMessage, 100)
 
 	ReplicaChan = make(chan struct {
 		Rep  *types.ReplicaStructure
@@ -63,17 +61,12 @@ var (
 	count = 0
 )
 
-// InitializeMessenger - Initializes the 0MQ sockets for the servers to communicate with clients and each other
+// InitializeMessenger - Initializes the 0MQ sockets (servers communication with clients/servers)
 func InitializeMessenger() {
-	SendRecvSync = make(map[int]chan interface{}, variables.K) // Probably not needed, cause its only used here
-	for i := 0; i < variables.K; i++ {
+	SendRecvSync = make(map[int]chan interface{}, variables.Clients) // Probably not needed, cause its only used here
+	for i := 0; i < variables.Clients; i++ {
 		SendRecvSync[i] = make(chan interface{})
 	}
-
-	//requestsChan = make(map[int]chan interface{}, variables.K)
-	//for i := 0; i < variables.K; i++ {
-	//	requestsChan[i] = make(chan interface{}, 1)
-	//}
 
 	Context, err := zmq4.NewContext()
 	if err != nil {
@@ -81,9 +74,10 @@ func InitializeMessenger() {
 	}
 
 	// Sockets REP & PUB to communicate with each one of the clients
-	ServerSockets = make(map[int]*zmq4.Socket, variables.K)
-	ResponseSockets = make(map[int]*zmq4.Socket, variables.K)
-	for i := 0; i < variables.K; i++ {
+	ServerSockets = make(map[int]*zmq4.Socket, variables.Clients)
+	ResponseSockets = make(map[int]*zmq4.Socket, variables.Clients)
+	for i := 0; i < variables.Clients; i++ {
+
 		// ServerSockets initialization to get clients requests
 		ServerSockets[i], err = Context.NewSocket(zmq4.REP)
 		if err != nil {
@@ -118,45 +112,43 @@ func InitializeMessenger() {
 	}
 
 	// A socket pair (REP/REQ) to communicate with each one of the other servers
-	RcvSockets = make(map[int]*zmq4.Socket)
-	SndSockets = make(map[int]*zmq4.Socket)
+	ReceiveSockets = make(map[int]*zmq4.Socket)
+	SendSockets = make(map[int]*zmq4.Socket)
 	for i := 0; i < variables.N; i++ {
 		// Not myself
-		if i == variables.Id {
+		if i == variables.ID {
 			continue
 		}
 
-		RcvSockets[i], err = Context.NewSocket(zmq4.REP)
+		// ReceiveSockets initialization to get information from other servers
+		ReceiveSockets[i], err = Context.NewSocket(zmq4.REP)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
 		var rcvAddr string
 		if !variables.Remote {
-			rcvAddr = strings.Replace(
-				config.GetRepAddressLocal(i),
-				"localhost",
-				"*",
-				1)
+			rcvAddr = strings.Replace(config.GetRepAddressLocal(i), "localhost", "*", 1)
 		} else {
 			rcvAddr = config.GetRepAddress(i)
 		}
-		err = RcvSockets[i].Bind(rcvAddr)
+		err = ReceiveSockets[i].Bind(rcvAddr)
 		if err != nil {
 			logger.ErrLogger.Fatal(err, " "+rcvAddr)
 		}
 		logger.OutLogger.Println("Binded on ", rcvAddr)
 
+		// SendSockets initialization to send information to other servers
+		SendSockets[i], err = Context.NewSocket(zmq4.REQ)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
 		var sndAddr string
 		if !variables.Remote {
 			sndAddr = config.GetReqAddressLocal(i)
 		} else {
 			sndAddr = config.GetReqAddress(i)
 		}
-		SndSockets[i], err = Context.NewSocket(zmq4.REQ)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		err = SndSockets[i].Connect(sndAddr)
+		err = SendSockets[i].Connect(sndAddr)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
@@ -164,11 +156,11 @@ func InitializeMessenger() {
 	}
 }
 
-// Broadcast - Calls SendMessage
+// Broadcast - Broadcasts a message to other servers
 func Broadcast(message types.Message) {
 	for i := 0; i < variables.N; i++ {
 		// Not myself
-		if i == variables.Id {
+		if i == variables.ID {
 			continue
 		}
 		SendMessage(message, i)
@@ -177,7 +169,7 @@ func Broadcast(message types.Message) {
 
 // TransmitMessages - Echos the message to the other servers
 func TransmitMessages() {
-	for messageTo := range messageChan {
+	for messageTo := range messageChannel {
 		to := messageTo.To
 		message := messageTo.Message
 		w := new(bytes.Buffer)
@@ -187,12 +179,13 @@ func TransmitMessages() {
 			logger.ErrLogger.Fatal(err)
 		}
 
-		_, err = SndSockets[to].SendBytes(w.Bytes(), 0)
-		//logger.OutLogger.Println("SENT Message to ", to)
+		_, err = SendSockets[to].SendBytes(w.Bytes(), 0)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		_, err = SndSockets[to].Recv(0)
+		//logger.OutLogger.Println("SENT Message to ", to)
+
+		_, err = SendSockets[to].Recv(0)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
@@ -200,9 +193,9 @@ func TransmitMessages() {
 	}
 }
 
-// SendMessage - Puts the messages in the message channel to be transmited with TransmitMessages
+// SendMessage - Puts the messages in the message channel to be transmitted with TransmitMessages
 func SendMessage(message types.Message, to int) {
-	messageChan <- struct {
+	messageChannel <- struct {
 		Message types.Message
 		To      int
 	}{Message: message, To: to}
@@ -220,44 +213,44 @@ func SendReplica(replica *types.ReplicaStructure, to int) {
 	SendMessage(message, to)
 }
 
-// Subscribe - Handles the inputs from clients and other servers
+// Subscribe - Handles the inputs from both clients and other servers
 func Subscribe() {
-	// Gets requests from clients and handles them by putting them in RequestChan
-	for i := 0; i < variables.K; i++ {
-		go func(i int) {
-			// Initialize them with a goroutine and waits forever
+	// Gets requests from clients and handles them
+	for i := 0; i < variables.Clients; i++ {
+		go func(i int) { // Initialize them with a goroutine and waits forever
 			for {
 				message, err := ServerSockets[i].RecvBytes(0)
 				if err != nil {
 					logger.ErrLogger.Fatal(err)
 				}
 				logger.OutLogger.Println("Request Received")
+
 				handleRequest(message)
+
 				_, err = ServerSockets[i].Send("", 0)
 				if err != nil {
 					logger.ErrLogger.Fatal(err)
 				}
-				//_ = <-SendRecvSync[i]
-				//requestsChan[i] <- struct{}{}
 			}
 		}(i)
 	}
 
-	// Gets messages from other servers and handles them by putting them in the appropriate channel
+	// Gets messages from other servers and handles them
 	for i := 0; i < variables.N; i++ {
 		// Not myself
-		if i == variables.Id {
+		if i == variables.ID {
 			continue
 		}
-		// Initializes them with a goroutine and waits forever
-		go func(i int) {
+		go func(i int) { // Initializes them with a goroutine and waits forever
 			for {
-				message, err := RcvSockets[i].RecvBytes(0)
+				message, err := ReceiveSockets[i].RecvBytes(0)
 				if err != nil {
 					logger.ErrLogger.Fatal(err)
 				}
+
 				go handleMessage(message)
-				_, err = RcvSockets[i].Send("OK.", 0)
+
+				_, err = ReceiveSockets[i].Send("OK.", 0)
 				if err != nil {
 					logger.ErrLogger.Fatal(err)
 				}
@@ -266,23 +259,24 @@ func Subscribe() {
 	}
 }
 
-// Handles the requests from clients
+// Put client's message in RequestChannel
 func handleRequest(msg []byte) {
-	cm := new(types.ClientMessage)
+	message := new(types.ClientMessage)
 	buffer := bytes.NewBuffer(msg)
 	decoder := gob.NewDecoder(buffer)
-	err := decoder.Decode(&cm)
+	err := decoder.Decode(&message)
 	if err != nil {
 		logger.ErrLogger.Println(len(msg))
 		logger.ErrLogger.Fatal(err)
 	}
-	RequestChan <- cm
+	RequestChannel <- message
 }
 
-// Handles the messages from the other servers (i think only ReplicaStructure consern us)
+// Handles the messages from the other servers (i think only ReplicaStructure concern us)
 func handleMessage(msg []byte) {
 	count++
-	logger.OutLogger.Println("Message Count", count)
+	logger.OutLogger.Println("Message Count:", count)
+
 	message := new(types.Message)
 	buffer := bytes.NewBuffer([]byte(msg))
 	decoder := gob.NewDecoder(buffer)
@@ -349,8 +343,9 @@ func handleMessage(msg []byte) {
 
 // ReplyClient - Sends back a response to the client
 func ReplyClient(reply *types.Reply) {
-	logger.OutLogger.Println("Replying to Client.")
 	to := reply.Client
+	logger.OutLogger.Println("Replying to Client", to, "...")
+
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(reply)
@@ -365,13 +360,11 @@ func ReplyClient(reply *types.Reply) {
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	//_ = <-requestsChan[to]
-	log.Printf("%s\n", string(reply.Result))
+	logger.OutLogger.Printf("%s\n", string(reply.Result))
 
 	_, err = ResponseSockets[to].SendBytes(w.Bytes(), 0)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	logger.OutLogger.Println("Replied to Client.")
-	//SendRecvSync[to] <- struct{}{}
+	logger.OutLogger.Println("Replied to Client", to)
 }
