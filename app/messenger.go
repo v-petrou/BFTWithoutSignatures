@@ -1,13 +1,12 @@
-package messenger
+package app
 
 import (
 	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
+	"BFTWithoutSignatures/types"
 	"BFTWithoutSignatures/variables"
-	"SSBFT/types"
 	"bytes"
 	"encoding/gob"
-	"strings"
 
 	"github.com/pebbe/zmq4"
 )
@@ -16,11 +15,11 @@ var (
 	// Context to initialize sockets
 	Context *zmq4.Context
 
-	// ReceiveSockets - Receive messages from other servers
-	ReceiveSockets map[int]*zmq4.Socket
-
 	// SendSockets - Send messages to other servers
 	SendSockets map[int]*zmq4.Socket
+
+	// ReceiveSockets - Receive messages from other servers
+	ReceiveSockets map[int]*zmq4.Socket
 
 	// ServerSockets - Get the client requests
 	ServerSockets map[int]*zmq4.Socket
@@ -28,32 +27,17 @@ var (
 	// ResponseSockets - Send responses to clients
 	ResponseSockets map[int]*zmq4.Socket
 
-	// SendRecvSync - Probably not needed
-	SendRecvSync map[int]chan interface{}
-
-	messageChannel = make(chan struct {
+	// MessageChannel - Channel to put the messages that need to be transmitted in
+	MessageChannel = make(chan struct {
 		Message types.Message
 		To      int
 	})
 
-	CoordChan = make(chan struct {
-		Message *types.CoordinationMessage
-		From    int
-	}, 100)
-
-	VcmChan = make(chan struct {
-		Vcm  types.VCM
-		From int
-	}, 100)
-
-	TokenChan = make(chan struct {
-		Token types.Token
-		From  int
-	}, 100)
-
+	// RequestChannel - Channel to put the client requests in
 	RequestChannel = make(chan *types.ClientMessage, 100)
 
-	ReplicaChan = make(chan struct {
+	// ReplicaChannel - Channel to put the replicas messages in
+	ReplicaChannel = make(chan struct {
 		Rep  *types.ReplicaStructure
 		From int
 	}, 100)
@@ -61,13 +45,8 @@ var (
 	count = 0
 )
 
-// InitializeMessenger - Initializes the 0MQ sockets (servers communication with clients/servers)
+// InitializeMessenger - Initializes the 0MQ sockets ( between Servers and Clients)
 func InitializeMessenger() {
-	SendRecvSync = make(map[int]chan interface{}, variables.Clients) // Probably not needed, cause its only used here
-	for i := 0; i < variables.Clients; i++ {
-		SendRecvSync[i] = make(chan interface{})
-	}
-
 	Context, err := zmq4.NewContext()
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
@@ -93,6 +72,7 @@ func InitializeMessenger() {
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
+		logger.OutLogger.Println("Requests from Client", i, "on", serverAddr)
 
 		// ResponseSockets initialization to publish the response back to the clients.
 		ResponseSockets[i], err = Context.NewSocket(zmq4.PUB)
@@ -109,6 +89,7 @@ func InitializeMessenger() {
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
+		logger.OutLogger.Println("Response to Client", i, "on", responseAddr)
 	}
 
 	// A socket pair (REP/REQ) to communicate with each one of the other servers
@@ -125,34 +106,34 @@ func InitializeMessenger() {
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		var rcvAddr string
+		var receiveAddr string
 		if !variables.Remote {
-			rcvAddr = strings.Replace(config.GetRepAddressLocal(i), "localhost", "*", 1)
+			receiveAddr = config.GetRepAddressLocal(i)
 		} else {
-			rcvAddr = config.GetRepAddress(i)
+			receiveAddr = config.GetRepAddress(i)
 		}
-		err = ReceiveSockets[i].Bind(rcvAddr)
+		err = ReceiveSockets[i].Bind(receiveAddr)
 		if err != nil {
-			logger.ErrLogger.Fatal(err, " "+rcvAddr)
+			logger.ErrLogger.Fatal(err)
 		}
-		logger.OutLogger.Println("Binded on ", rcvAddr)
+		logger.OutLogger.Println("Receive from Server", i, "on", receiveAddr)
 
 		// SendSockets initialization to send information to other servers
 		SendSockets[i], err = Context.NewSocket(zmq4.REQ)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		var sndAddr string
+		var sendAddr string
 		if !variables.Remote {
-			sndAddr = config.GetReqAddressLocal(i)
+			sendAddr = config.GetReqAddressLocal(i)
 		} else {
-			sndAddr = config.GetReqAddress(i)
+			sendAddr = config.GetReqAddress(i)
 		}
-		err = SendSockets[i].Connect(sndAddr)
+		err = SendSockets[i].Connect(sendAddr)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		logger.OutLogger.Println("Connected to ", sndAddr)
+		logger.OutLogger.Println("Send to Server", i, "on", sendAddr)
 	}
 }
 
@@ -167,9 +148,29 @@ func Broadcast(message types.Message) {
 	}
 }
 
-// TransmitMessages - Echos the message to the other servers
+// SendReplica - (I think) Creates the replicas
+func SendReplica(replica *types.ReplicaStructure, to int) {
+	w := new(bytes.Buffer)
+	encoder := gob.NewEncoder(w)
+	err := encoder.Encode(replica)
+	if err != nil {
+		logger.ErrLogger.Fatal(err)
+	}
+	message := types.NewMessage(w.Bytes(), "ReplicaStructure")
+	SendMessage(message, to)
+}
+
+// SendMessage - Puts the messages in the message channel to be transmitted with TransmitMessages
+func SendMessage(message types.Message, to int) {
+	MessageChannel <- struct {
+		Message types.Message
+		To      int
+	}{Message: message, To: to}
+}
+
+// TransmitMessages - Transmites the messages to the other servers [go started from main]
 func TransmitMessages() {
-	for messageTo := range messageChannel {
+	for messageTo := range MessageChannel {
 		to := messageTo.To
 		message := messageTo.Message
 		w := new(bytes.Buffer)
@@ -183,34 +184,14 @@ func TransmitMessages() {
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		//logger.OutLogger.Println("SENT Message to ", to)
+		logger.OutLogger.Println("SENT Message to", to)
 
 		_, err = SendSockets[to].Recv(0)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		//logger.OutLogger.Println("OKAY FROM ", to)
+		logger.OutLogger.Println("OKAY from", to)
 	}
-}
-
-// SendMessage - Puts the messages in the message channel to be transmitted with TransmitMessages
-func SendMessage(message types.Message, to int) {
-	messageChannel <- struct {
-		Message types.Message
-		To      int
-	}{Message: message, To: to}
-}
-
-// SendReplica - (I think) Creates the replicas
-func SendReplica(replica *types.ReplicaStructure, to int) {
-	w := new(bytes.Buffer)
-	encoder := gob.NewEncoder(w)
-	err := encoder.Encode(replica)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
-	message := types.NewMessage(w.Bytes(), "ReplicaStructure")
-	SendMessage(message, to)
 }
 
 // Subscribe - Handles the inputs from both clients and other servers
@@ -266,7 +247,6 @@ func handleRequest(msg []byte) {
 	decoder := gob.NewDecoder(buffer)
 	err := decoder.Decode(&message)
 	if err != nil {
-		logger.ErrLogger.Println(len(msg))
 		logger.ErrLogger.Fatal(err)
 	}
 	RequestChannel <- message
@@ -286,46 +266,6 @@ func handleMessage(msg []byte) {
 	}
 
 	switch message.Type {
-	case "CoordinationMessage":
-		coordination := new(types.CoordinationMessage)
-		buf := bytes.NewBuffer(message.Payload)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&coordination)
-		if err != nil {
-			logger.ErrLogger.Println(len(message.Payload))
-			logger.ErrLogger.Fatal(err)
-		}
-		CoordChan <- struct {
-			Message *types.CoordinationMessage
-			From    int
-		}{Message: coordination, From: message.From}
-		break
-	case "VCM":
-		vcm := new(types.VCM)
-		buf := bytes.NewBuffer(message.Payload)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&vcm)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		VcmChan <- struct {
-			Vcm  types.VCM
-			From int
-		}{Vcm: *vcm, From: message.From}
-		break
-	case "Token":
-		token := new(types.Token)
-		buf := bytes.NewBuffer(message.Payload)
-		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&token)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		TokenChan <- struct {
-			Token types.Token
-			From  int
-		}{Token: *token, From: message.From}
-		break
 	case "ReplicaStructure":
 		replica := new(types.ReplicaStructure)
 		buf := bytes.NewBuffer(message.Payload)
@@ -334,7 +274,7 @@ func handleMessage(msg []byte) {
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		ReplicaChan <- struct {
+		ReplicaChannel <- struct {
 			Rep  *types.ReplicaStructure
 			From int
 		}{Rep: replica, From: message.From}
@@ -343,9 +283,6 @@ func handleMessage(msg []byte) {
 
 // ReplyClient - Sends back a response to the client
 func ReplyClient(reply *types.Reply) {
-	to := reply.Client
-	logger.OutLogger.Println("Replying to Client", to, "...")
-
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(reply)
@@ -362,6 +299,7 @@ func ReplyClient(reply *types.Reply) {
 	}
 	logger.OutLogger.Printf("%s\n", string(reply.Result))
 
+	to := reply.Client
 	_, err = ResponseSockets[to].SendBytes(w.Bytes(), 0)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)

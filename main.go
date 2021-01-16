@@ -1,18 +1,17 @@
 package main
 
 import (
-	messenger "BFTWithoutSignatures/app"
+	"BFTWithoutSignatures/app"
 	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
 	"BFTWithoutSignatures/variables"
-	"SSBFT/app"
 	"log"
 	"os"
 	"os/signal"
 	"strconv"
 )
 
-// Initializer method
+// Initializer - Method that initializes all required processes
 func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 	variables.Initialize(id, n, t, clients)
 
@@ -22,31 +21,31 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 
 	logger.InitializeLogger()
 	logger.OutLogger.Println(
-		"N", variables.N,
-		"ID", variables.ID,
-		"F", variables.F,
-		"Threshold T", variables.T,
-		"Client Size", variables.Clients,
+		"ID:", variables.ID,
+		"| N:", variables.N,
+		"| F:", variables.F,
+		"| T:", variables.T,
+		"| Clients:", variables.Clients,
 	)
 
-	messenger.InitializeMessenger()
+	app.InitializeMessenger()
+	// app.InitializeReplication()
 
-	app.InitializeAutomaton()
-	app.InitializeViewChange()
-	app.InitializeFailureDetector()
-	app.InitializeEstablishment()
-	app.InitializeReplication()
+	// Initialize the message transmition and handling for the servers
+	app.Subscribe()
+	go app.TransmitMessages()
+	// go app.ByzantineReplication()
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	terminate := make(chan os.Signal, 1)
+	signal.Notify(terminate, os.Interrupt)
 	go func() {
-		for range c {
+		for range terminate {
 			for i := 0; i < n; i++ {
 				if i == id {
 					continue
 				}
-				messenger.ReceiveSockets[i].Close()
-				messenger.SendSockets[i].Close()
+				app.ReceiveSockets[i].Close()
+				app.SendSockets[i].Close()
 			}
 			os.Exit(0)
 		}
@@ -69,11 +68,6 @@ func main() {
 	scenario := config.Scenario(tmp)
 
 	initializer(id, n, t, clients, scenario)
-
-	// Initialize the message transmition and handling for the servers
-	messenger.Subscribe()
-	go messenger.TransmitMessages()
-	go app.ByzantineReplication()
 
 	_ = <-done
 }
