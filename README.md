@@ -1,14 +1,26 @@
 # BFTWithoutSignatures
-A Golang with ZeroMQ implementation of the algorithm:
-From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols without Signatures.
+### BFTWithoutSignatures is a Golang with ZeroMQ implementation of the algorithm:
+<div style="text-align: center; font-size: 15px">
+From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols without Signatures
+</div>
+<div style="text-align: right; font-size: 13px">
+    By Miguel Correia, Nuno Ferreira Neves and Paulo Verissimo
+</div>
 
-To clone the repository:
-    1. Open Terminal.
-    2. Change the current working directory to the location where you want the cloned directory.
-    3. Run
-        $ git clone https://github.com/v-petrou/BFTWithoutSignatures.git
+## Install Golang
+1. If you have not already installed Golang follow the instructions here: https://golang.org/doc/install
 
-To run the program do:
-    $ go install BFTWithoutSignatures
-    $ BFTWithoutSignatures generate_keys <N>
-    $ BFTWithoutSignatures <ID> <N> <t> <Clients> <Scenario>
+## Clone the repository
+1. Open Terminal.
+2. Run
+```bash
+cd ~/go/src/
+git clone https://github.com/v-petrou/BFTWithoutSignatures.git
+```
+
+## Run the program
+```bash
+go install BFTWithoutSignatures
+BFTWithoutSignatures generate_keys <N>
+BFTWithoutSignatures <ID> <N> <t> <Clients> <Scenario>
+```
