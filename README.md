@@ -12,14 +12,12 @@ From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols with
 If you have not already installed Golang follow the instructions here: https://golang.org/doc/install
 
 ## Clone Repository
-1. Open Terminal.
-2. Run
 ```bash
 cd ~/go/src/
 git clone https://github.com/v-petrou/BFTWithoutSignatures.git
 ```
 
-## Run the program
+## Run Program
 ```bash
 go install BFTWithoutSignatures
 BFTWithoutSignatures generate_keys <N>
