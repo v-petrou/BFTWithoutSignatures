@@ -1,4 +1,4 @@
-package app
+package messenger
 
 import (
 	"BFTWithoutSignatures/config"
@@ -266,6 +266,8 @@ func handleMessage(msg []byte) {
 	}
 
 	switch message.Type {
+	case "Test":
+		logger.OutLogger.Println(string(message.Payload))
 	case "ReplicaStructure":
 		replica := new(types.ReplicaStructure)
 		buf := bytes.NewBuffer(message.Payload)

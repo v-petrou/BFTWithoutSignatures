@@ -18,39 +18,14 @@ var (
 
 // InitializeLogger - Initializes the Out and Err loggers
 func InitializeLogger() {
-	outFolder := "/home/vasilis/logs/" // vasilis changes depending on the PC
-	errFolder := "/home/vasilis/logs/"
-	// switch config.TestCase {
-	// case config.NORMAL:
-	// 	outFolder += "normal/out/"
-	// 	errFolder += "normal/err/"
-	// 	break
-	// case config.STALE_VIEWS:
-	// 	outFolder += "stale_views/out/"
-	// 	errFolder += "stale_views/err/"
-	// 	break
-	// case config.STALE_STATES:
-	// 	outFolder += "stale_states/out/"
-	// 	errFolder += "stale_states/err/"
-	// 	break
-	// case config.STALE_REQUESTS:
-	// 	outFolder += "stale_requests/out/"
-	// 	errFolder += "stale_requests/err/"
-	// 	break
-	// case config.BYZANTINE_PRIM:
-	// 	outFolder += "byzantine_prim/out/"
-	// 	errFolder += "byzantine_prim/err/"
-	// 	break
-	// case config.NON_SS:
-	// 	outFolder += "non_ss/out/"
-	// 	errFolder += "non_ss/err/"
-	// }
-	outputFilePath := outFolder + "output_" + strconv.Itoa(variables.ID) + "_" +
-		time.Now().Format("01-02-2006 15:04:05") + ".txt"
-	errorFilePath := errFolder + "error_" + strconv.Itoa(variables.ID) + "_" +
-		time.Now().Format("01-02-2006 15:04:05") + ".txt"
+	outFolder := "./logs/"
+	errFolder := "./logs/"
+	t := time.Now().Format("01-02-2006 15:04:05")
 
-	outFile, err := os.OpenFile(outputFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	outFilePath := outFolder + "output_" + strconv.Itoa(variables.ID) + "_" + t + ".txt"
+	errorFilePath := errFolder + "error_" + strconv.Itoa(variables.ID) + "_" + t + ".txt"
+
+	outFile, err := os.OpenFile(outFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,9 +1,11 @@
 package main
 
 import (
-	"BFTWithoutSignatures/app"
 	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
+	"BFTWithoutSignatures/messenger"
+	"BFTWithoutSignatures/threshenc"
+	"BFTWithoutSignatures/types"
 	"BFTWithoutSignatures/variables"
 	"log"
 	"os"
@@ -28,13 +30,24 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 		"| Clients:", variables.Clients,
 	)
 
-	app.InitializeMessenger()
+	messenger.InitializeMessenger()
 	// app.InitializeReplication()
 
 	// Initialize the message transmition and handling for the servers
-	app.Subscribe()
-	go app.TransmitMessages()
+	messenger.Subscribe()
+	go messenger.TransmitMessages()
 	// go app.ByzantineReplication()
+
+	threshenc.ReadKeys()
+
+	// Start Testing
+	if variables.ID == 1 {
+		messenger.SendMessage(types.NewMessage([]byte("TEST"), "Test"), 2)
+
+		logger.OutLogger.Println(threshenc.SecretKey)
+		logger.OutLogger.Println(threshenc.VerificationKeys[0])
+	}
+	// End Testing
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt)
@@ -44,8 +57,8 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 				if i == id {
 					continue
 				}
-				app.ReceiveSockets[i].Close()
-				app.SendSockets[i].Close()
+				messenger.ReceiveSockets[i].Close()
+				messenger.SendSockets[i].Close()
 			}
 			os.Exit(0)
 		}
@@ -56,18 +69,23 @@ func main() {
 	done := make(chan interface{})
 
 	args := os.Args[1:]
-	if len(args) < 5 {
+	if len(args) == 2 && string(args[0]) == "generate_keys" {
+		N, _ := strconv.Atoi(args[1])
+		threshenc.GenerateKeys(N)
+
+	} else if len(args) == 5 {
+		id, _ := strconv.Atoi(args[0])
+		n, _ := strconv.Atoi(args[1])
+		t, _ := strconv.Atoi(args[2])
+		clients, _ := strconv.Atoi(args[3])
+		tmp, _ := strconv.Atoi(args[4])
+		scenario := config.Scenario(tmp)
+
+		initializer(id, n, t, clients, scenario)
+
+		_ = <-done
+
+	} else {
 		log.Fatal("Arguments should be '<id> <n> <f> <k> <scenario>")
 	}
-
-	id, _ := strconv.Atoi(args[0])
-	n, _ := strconv.Atoi(args[1])
-	t, _ := strconv.Atoi(args[2])
-	clients, _ := strconv.Atoi(args[3])
-	tmp, _ := strconv.Atoi(args[4])
-	scenario := config.Scenario(tmp)
-
-	initializer(id, n, t, clients, scenario)
-
-	_ = <-done
 }
