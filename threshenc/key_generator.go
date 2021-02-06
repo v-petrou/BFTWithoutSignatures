@@ -11,9 +11,7 @@ import (
 )
 
 // GenerateKeys - Generates the key pair and saves them locally
-func GenerateKeys(N int) {
-	folder := "./keys/"
-
+func GenerateKeys(N int, folder string) {
 	for i := 0; i < N; i++ {
 		privateKey, publicKey, err := generateKeyPair(2048)
 		if err != nil {

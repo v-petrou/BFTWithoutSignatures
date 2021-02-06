@@ -20,9 +20,7 @@ var (
 )
 
 // ReadKeys - Reads the keys from local files
-func ReadKeys() {
-	folder := "./keys/"
-
+func ReadKeys(folder string) {
 	secretFile := folder + "secret_" + strconv.Itoa(variables.ID) + ".pem"
 	sKey, err := readKeyFromFile(secretFile)
 	if err != nil {

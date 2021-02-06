@@ -5,7 +5,6 @@ import (
 	"BFTWithoutSignatures/logger"
 	"BFTWithoutSignatures/messenger"
 	"BFTWithoutSignatures/threshenc"
-	"BFTWithoutSignatures/types"
 	"BFTWithoutSignatures/variables"
 	"log"
 	"os"
@@ -17,37 +16,28 @@ import (
 func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 	variables.Initialize(id, n, t, clients)
 
-	config.InitializeLocal()
-	config.InitializeIP()
+	if variables.Remote {
+		config.InitializeIP()
+	} else {
+		config.InitializeLocal()
+	}
 	config.InitializeScenario(scenario)
 
-	logger.InitializeLogger()
-	logger.OutLogger.Println(
-		"ID:", variables.ID,
-		"| N:", variables.N,
-		"| F:", variables.F,
-		"| T:", variables.T,
-		"| Clients:", variables.Clients,
+	logger.InitializeLogger("./logs/out/", "./logs/error/")
+	logger.OutLogger.Print(
+		"ID: ", variables.ID,
+		"\tN: ", variables.N,
+		"\tF: ", variables.F,
+		"\tT: ", variables.T,
+		"\tClients: ", variables.Clients,
+		"\n\n",
 	)
 
-	messenger.InitializeMessenger()
-	// app.InitializeReplication()
+	threshenc.ReadKeys("./keys/")
 
-	// Initialize the message transmition and handling for the servers
+	messenger.InitializeMessenger()
 	messenger.Subscribe()
 	go messenger.TransmitMessages()
-	// go app.ByzantineReplication()
-
-	threshenc.ReadKeys()
-
-	// Start Testing
-	if variables.ID == 1 {
-		messenger.SendMessage(types.NewMessage([]byte("TEST"), "Test"), 2)
-
-		logger.OutLogger.Println(threshenc.SecretKey)
-		logger.OutLogger.Println(threshenc.VerificationKeys[0])
-	}
-	// End Testing
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt)
@@ -66,12 +56,10 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 }
 
 func main() {
-	done := make(chan interface{})
-
 	args := os.Args[1:]
 	if len(args) == 2 && string(args[0]) == "generate_keys" {
 		N, _ := strconv.Atoi(args[1])
-		threshenc.GenerateKeys(N)
+		threshenc.GenerateKeys(N, "./keys/")
 
 	} else if len(args) == 5 {
 		id, _ := strconv.Atoi(args[0])
@@ -83,6 +71,8 @@ func main() {
 
 		initializer(id, n, t, clients, scenario)
 
+		// To keep the server running
+		done := make(chan interface{})
 		_ = <-done
 
 	} else {
