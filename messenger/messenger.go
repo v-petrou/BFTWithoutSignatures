@@ -11,6 +11,7 @@ import (
 	"github.com/pebbe/zmq4"
 )
 
+// Sockets
 var (
 	// Context to initialize sockets
 	Context *zmq4.Context
@@ -26,23 +27,30 @@ var (
 
 	// ResponseSockets - Send responses to clients
 	ResponseSockets map[int]*zmq4.Socket
+)
 
+// Channels
+var (
 	// MessageChannel - Channel to put the messages that need to be transmitted in
 	MessageChannel = make(chan struct {
 		Message types.Message
 		To      int
 	})
 
+	// BvbChannel - Channel to put the BVB messages in
+	BvbChannel = make(map[int]chan struct {
+		BcMessage types.BcMessage
+		From      int
+	})
+
+	// BcChannel - Channel to put the BC messages in
+	BcChannel = make(map[int]chan struct {
+		BcMessage types.BcMessage
+		From      int
+	})
+
 	// RequestChannel - Channel to put the client requests in
 	RequestChannel = make(chan *types.ClientMessage, 100)
-
-	// ReplicaChannel - Channel to put the replicas messages in
-	ReplicaChannel = make(chan struct {
-		Rep  *types.ReplicaStructure
-		From int
-	}, 100)
-
-	count = 0
 )
 
 // InitializeMessenger - Initializes the 0MQ sockets ( between Servers and Clients)
@@ -52,47 +60,7 @@ func InitializeMessenger() {
 		logger.ErrLogger.Fatal(err)
 	}
 
-	// Sockets REP & PUB to communicate with each one of the clients
-	ServerSockets = make(map[int]*zmq4.Socket, variables.Clients)
-	ResponseSockets = make(map[int]*zmq4.Socket, variables.Clients)
-	for i := 0; i < variables.Clients; i++ {
-
-		// ServerSockets initialization to get clients requests
-		ServerSockets[i], err = Context.NewSocket(zmq4.REP)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		var serverAddr string
-		if !variables.Remote {
-			serverAddr = config.GetServerAddressLocal(i)
-		} else {
-			serverAddr = config.GetServerAddress(i)
-		}
-		err = ServerSockets[i].Bind(serverAddr)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		logger.OutLogger.Println("Requests from Client", i, "on", serverAddr)
-
-		// ResponseSockets initialization to publish the response back to the clients.
-		ResponseSockets[i], err = Context.NewSocket(zmq4.PUB)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		var responseAddr string
-		if !variables.Remote {
-			responseAddr = config.GetResponseAddressLocal(i)
-		} else {
-			responseAddr = config.GetResponseAddress(i)
-		}
-		err = ResponseSockets[i].Bind(responseAddr)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		logger.OutLogger.Println("Response to Client", i, "on", responseAddr)
-	}
-
-	// A socket pair (REP/REQ) to communicate with each one of the other servers
+	// Initialization of a socket pair to communicate with each one of the other servers
 	ReceiveSockets = make(map[int]*zmq4.Socket)
 	SendSockets = make(map[int]*zmq4.Socket)
 	for i := 0; i < variables.N; i++ {
@@ -135,9 +103,53 @@ func InitializeMessenger() {
 		}
 		logger.OutLogger.Println("Send to Server", i, "on", sendAddr)
 	}
+
+	logger.OutLogger.Println("-----------------------------------------")
+
+	// Initialization of a socket pair to communicate with each one of the clients
+	ServerSockets = make(map[int]*zmq4.Socket, variables.Clients)
+	ResponseSockets = make(map[int]*zmq4.Socket, variables.Clients)
+	for i := 0; i < variables.Clients; i++ {
+
+		// ServerSockets initialization to get clients requests
+		ServerSockets[i], err = Context.NewSocket(zmq4.REP)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+		var serverAddr string
+		if !variables.Remote {
+			serverAddr = config.GetServerAddressLocal(i)
+		} else {
+			serverAddr = config.GetServerAddress(i)
+		}
+		err = ServerSockets[i].Bind(serverAddr)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+		logger.OutLogger.Println("Requests from Client", i, "on", serverAddr)
+
+		// ResponseSockets initialization to publish the response back to the clients.
+		ResponseSockets[i], err = Context.NewSocket(zmq4.PUB)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+		var responseAddr string
+		if !variables.Remote {
+			responseAddr = config.GetResponseAddressLocal(i)
+		} else {
+			responseAddr = config.GetResponseAddress(i)
+		}
+		err = ResponseSockets[i].Bind(responseAddr)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+		logger.OutLogger.Println("Response to Client", i, "on", responseAddr)
+	}
+
+	logger.OutLogger.Print("-----------------------------------------\n\n")
 }
 
-// Broadcast - Broadcasts a message to other servers
+// Broadcast - Broadcasts a message to all other servers
 func Broadcast(message types.Message) {
 	for i := 0; i < variables.N; i++ {
 		// Not myself
@@ -148,19 +160,7 @@ func Broadcast(message types.Message) {
 	}
 }
 
-// SendReplica - (I think) Creates the replicas
-func SendReplica(replica *types.ReplicaStructure, to int) {
-	w := new(bytes.Buffer)
-	encoder := gob.NewEncoder(w)
-	err := encoder.Encode(replica)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
-	message := types.NewMessage(w.Bytes(), "ReplicaStructure")
-	SendMessage(message, to)
-}
-
-// SendMessage - Puts the messages in the message channel to be transmitted with TransmitMessages
+// SendMessage - Puts the messages in the message channel to be transmitted
 func SendMessage(message types.Message, to int) {
 	MessageChannel <- struct {
 		Message types.Message
@@ -168,7 +168,7 @@ func SendMessage(message types.Message, to int) {
 	}{Message: message, To: to}
 }
 
-// TransmitMessages - Transmites the messages to the other servers [go started from main]
+// TransmitMessages - Transmits the messages to the other servers [go started from main]
 func TransmitMessages() {
 	for messageTo := range MessageChannel {
 		to := messageTo.To
@@ -184,38 +184,17 @@ func TransmitMessages() {
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		logger.OutLogger.Println("SENT Message to", to)
 
 		_, err = SendSockets[to].Recv(0)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		logger.OutLogger.Println("OKAY from", to)
+		logger.OutLogger.Println("SENT", messageTo.Message.Type, "to", to)
 	}
 }
 
 // Subscribe - Handles the inputs from both clients and other servers
 func Subscribe() {
-	// Gets requests from clients and handles them
-	for i := 0; i < variables.Clients; i++ {
-		go func(i int) { // Initialize them with a goroutine and waits forever
-			for {
-				message, err := ServerSockets[i].RecvBytes(0)
-				if err != nil {
-					logger.ErrLogger.Fatal(err)
-				}
-				logger.OutLogger.Println("Request Received")
-
-				handleRequest(message)
-
-				_, err = ServerSockets[i].Send("", 0)
-				if err != nil {
-					logger.ErrLogger.Fatal(err)
-				}
-			}
-		}(i)
-	}
-
 	// Gets messages from other servers and handles them
 	for i := 0; i < variables.N; i++ {
 		// Not myself
@@ -238,6 +217,25 @@ func Subscribe() {
 			}
 		}(i)
 	}
+
+	// Gets requests from clients and handles them
+	for i := 0; i < variables.Clients; i++ {
+		go func(i int) { // Initialize them with a goroutine and waits forever
+			for {
+				message, err := ServerSockets[i].RecvBytes(0)
+				if err != nil {
+					logger.ErrLogger.Fatal(err)
+				}
+
+				handleRequest(message)
+
+				_, err = ServerSockets[i].Send("", 0)
+				if err != nil {
+					logger.ErrLogger.Fatal(err)
+				}
+			}
+		}(i)
+	}
 }
 
 // Put client's message in RequestChannel
@@ -249,14 +247,12 @@ func handleRequest(msg []byte) {
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
+	logger.OutLogger.Println("REQ received from client")
 	RequestChannel <- message
 }
 
 // Handles the messages from the other servers (i think only ReplicaStructure concern us)
 func handleMessage(msg []byte) {
-	count++
-	logger.OutLogger.Println("Message Count:", count)
-
 	message := new(types.Message)
 	buffer := bytes.NewBuffer([]byte(msg))
 	decoder := gob.NewDecoder(buffer)
@@ -265,21 +261,52 @@ func handleMessage(msg []byte) {
 		logger.ErrLogger.Fatal(err)
 	}
 
+	logger.OutLogger.Println("RECEIVED", message.Type, "from", message.From)
+
 	switch message.Type {
-	case "Test":
-		logger.OutLogger.Println(string(message.Payload))
-	case "ReplicaStructure":
-		replica := new(types.ReplicaStructure)
+	case "BVB":
+		bcMessage := new(types.BcMessage)
 		buf := bytes.NewBuffer(message.Payload)
 		dec := gob.NewDecoder(buf)
-		err = dec.Decode(&replica)
+		err = dec.Decode(&bcMessage)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		ReplicaChannel <- struct {
-			Rep  *types.ReplicaStructure
-			From int
-		}{Rep: replica, From: message.From}
+
+		tag := bcMessage.Tag
+		if _, in := BvbChannel[tag]; !in {
+			BvbChannel[tag] = make(chan struct {
+				BcMessage types.BcMessage
+				From      int
+			})
+		}
+
+		BvbChannel[tag] <- struct {
+			BcMessage types.BcMessage
+			From      int
+		}{BcMessage: *bcMessage, From: message.From}
+
+	case "BC":
+		bcMessage := new(types.BcMessage)
+		buf := bytes.NewBuffer(message.Payload)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&bcMessage)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		tag := bcMessage.Tag
+		if _, in := BcChannel[tag]; !in {
+			BcChannel[tag] = make(chan struct {
+				BcMessage types.BcMessage
+				From      int
+			})
+		}
+
+		BcChannel[tag] <- struct {
+			BcMessage types.BcMessage
+			From      int
+		}{BcMessage: *bcMessage, From: message.From}
 	}
 }
 
@@ -299,12 +326,11 @@ func ReplyClient(reply *types.Reply) {
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	logger.OutLogger.Printf("%s\n", string(reply.Result))
 
 	to := reply.Client
 	_, err = ResponseSockets[to].SendBytes(w.Bytes(), 0)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	logger.OutLogger.Println("Replied to Client", to)
+	logger.OutLogger.Println("Replied to Client", to, "(", string(reply.Result), ")")
 }

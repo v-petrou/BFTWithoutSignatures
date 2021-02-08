@@ -20,8 +20,8 @@ var (
 func InitializeLogger(outFolder string, errFolder string) {
 	t := time.Now().Format("01-02-2006 15:04:05")
 
-	outFilePath := outFolder + strconv.Itoa(variables.ID) + "_output_" + t + ".txt"
-	errFilePath := errFolder + strconv.Itoa(variables.ID) + "_error_" + t + ".txt"
+	outFilePath := outFolder + strconv.Itoa(variables.ID) + "_out_" + t + ".log"
+	errFilePath := errFolder + strconv.Itoa(variables.ID) + "_err_" + t + ".log"
 
 	outFile, err := os.OpenFile(outFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -34,11 +34,11 @@ func InitializeLogger(outFolder string, errFolder string) {
 
 	OutLogger = log.New(
 		outFile,
-		"INFO:\t",
-		log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+		"INFO: ",
+		log.Lmicroseconds|log.Lshortfile)
 
 	ErrLogger = log.New(
 		errFile,
-		"ERROR:\t",
-		log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+		"ERROR: ",
+		log.Lmicroseconds|log.Lshortfile)
 }

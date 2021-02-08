@@ -7,8 +7,19 @@ From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols with
     By Miguel Correia, Nuno Ferreira Neves and Paulo Verissimo
 </div>
 
+## Modules
+#### Binary Consensus
+
+#### Reliable Broadcast
+
+#### Multi-Valued Consensus
+
+#### Vector Consensus
+
+#### Atomic Broadcast
+
 ## Install Golang
-If you have not already installed Golang follow the instructions here: https://golang.org/doc/install
+If you have not already installed [Golang](https://golang.org/doc/install) follow the instructions here.
 
 ## Clone Repository
 ```bash
@@ -31,7 +42,7 @@ BFTWithoutSignatures <ID> <N> <t> <Clients> <Scenario>
 - [ ] Common-Coin
 - [ ] Binary Consensus
 - [ ] Reliable Broadcast
-- [ ] Multi-valued Consensus
+- [ ] Multi-Valued Consensus
 - [ ] Vector Consensus
 - [ ] Atomic Broadcast
 

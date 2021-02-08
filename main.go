@@ -25,12 +25,8 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 
 	logger.InitializeLogger("./logs/out/", "./logs/error/")
 	logger.OutLogger.Print(
-		"ID: ", variables.ID,
-		"\tN: ", variables.N,
-		"\tF: ", variables.F,
-		"\tT: ", variables.T,
-		"\tClients: ", variables.Clients,
-		"\n\n",
+		"ID:", variables.ID, " | N:", variables.N, " | F:", variables.F,
+		" | T:", variables.T, " | Clients:", variables.Clients, "\n\n",
 	)
 
 	threshenc.ReadKeys("./keys/")

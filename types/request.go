@@ -130,13 +130,13 @@ type Reply struct {
 	TimeStamp time.Time
 	Client    int
 	ID        int
-	Result    RepState
+	Result    string
 }
 
 // Equals - Checks if replies are equal
 func (rep *Reply) Equals(reply *Reply) bool {
 	return rep.Client == reply.Client &&
-		rep.ID == reply.ID && rep.Result.Equals(reply.Result)
+		rep.ID == reply.ID && rep.Result == reply.Result
 }
 
 // ------------------------------------------------------------------------------------ //
