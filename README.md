@@ -8,7 +8,13 @@ From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols with
 </div>
 
 ## Modules
-#### Binary Consensus
+### Binary Consensus
+A binary consensus protocol performs consensus on a binary value b ∈ {0, 1}. The problem
+can be formally defined in terms of three properties:
+- Validity: if all correct processes propose the same value b, then any correct process
+that decides, decides b.
+- Agreement: no two correct processes decide differently.
+- Termination: every correct process eventually decides.
 
 #### Reliable Broadcast
 
@@ -28,11 +34,27 @@ git clone https://github.com/v-petrou/BFTWithoutSignatures.git
 ```
 
 ## Run
+### Manually
+To install the program and generate the keys run:
 ```bash
 go install BFTWithoutSignatures
-BFTWithoutSignatures generate_keys <N>                      // For key generation
+BFTWithoutSignatures generate_keys <N>      // For key generation
+```
+Open <N> different terminals. In each terminal run:
+```bash
 BFTWithoutSignatures <ID> <N> <t> <Clients> <Scenario>
 ```
+
+### Script
+Adjust the script (BFTWithoutSignatures/scripts/run.sh) and run:
+```bash
+bash ~/go/src/BFTWithoutSignatures/scripts/run.sh
+```
+When you are done and want to kill the processes run:
+```bash
+bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
+```
+
 ## Current project state
 - [x] Messenger
 - [x] Trusted Dealer

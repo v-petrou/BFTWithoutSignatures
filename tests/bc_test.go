@@ -1,5 +1,7 @@
 package tests
 
+// go test -v -run $TEST /home/vasilis/go/src/BFTWithoutSignatures/tests -args 0 4 1 1 0
+
 import (
 	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
@@ -14,7 +16,6 @@ import (
 	"testing"
 )
 
-// go test -v -run TestBvBroadcast /home/vasilis/go/src/BFTWithoutSignatures/tests -args 0 4 1 1 0
 func TestBvBroadcast(t *testing.T) {
 	args := os.Args[4:]
 	if len(args) == 5 {
@@ -44,7 +45,6 @@ func TestBvBroadcast(t *testing.T) {
 	_ = <-done
 }
 
-// go test -v -run TestBConsensus /home/vasilis/go/src/BFTWithoutSignatures/tests -args 0 4 1 1 0
 func TestBConsensus(t *testing.T) {
 	args := os.Args[4:]
 	if len(args) == 5 {

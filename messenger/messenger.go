@@ -3,6 +3,7 @@ package messenger
 import (
 	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
+	"BFTWithoutSignatures/threshenc"
 	"BFTWithoutSignatures/types"
 	"BFTWithoutSignatures/variables"
 	"bytes"
@@ -238,7 +239,7 @@ func Subscribe() {
 	}
 }
 
-// Put client's message in RequestChannel
+// Put client's message in RequestChannel to be handled
 func handleRequest(msg []byte) {
 	message := new(types.ClientMessage)
 	buffer := bytes.NewBuffer(msg)
@@ -251,7 +252,7 @@ func handleRequest(msg []byte) {
 	RequestChannel <- message
 }
 
-// Handles the messages from the other servers (i think only ReplicaStructure concern us)
+// Handles the messages from the other servers
 func handleMessage(msg []byte) {
 	message := new(types.Message)
 	buffer := bytes.NewBuffer([]byte(msg))
@@ -259,6 +260,11 @@ func handleMessage(msg []byte) {
 	err := decoder.Decode(&message)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
+	}
+
+	if !(threshenc.VerifyMessage(message.Payload, message.Signature, message.From)) {
+		logger.OutLogger.Println("INVALID", message.Type, "from", message.From)
+		return
 	}
 
 	logger.OutLogger.Println("RECEIVED", message.Type, "from", message.From)
