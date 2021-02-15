@@ -16,7 +16,7 @@ import (
 	"testing"
 )
 
-func TestBvBroadcast(t *testing.T) {
+func TestMVConsensus(t *testing.T) {
 	args := os.Args[4:]
 	if len(args) == 5 {
 		id, _ := strconv.Atoi(args[0])
@@ -26,53 +26,32 @@ func TestBvBroadcast(t *testing.T) {
 		tmp, _ := strconv.Atoi(args[4])
 		scenario := config.Scenario(tmp)
 
-		initializeForTestBc(id, n, t, clients, scenario)
+		initializeForTestMvc(id, n, t, clients, scenario)
 	} else {
 		log.Fatal("Arguments should be '<id> <n> <f> <k> <scenario>")
 	}
 
 	/*** Start Testing ***/
 
-	go modules.BvBroadcast(1, 0)
+	go modules.MultiValuedConsensus(1, []byte("AEK"))
 
-	go modules.BvBroadcast(2, 1)
-
-	go modules.BvBroadcast(3, uint(variables.ID%2))
-
-	/*** End Testing ***/
-
-	done := make(chan interface{})
-	_ = <-done
-}
-
-func TestBConsensus(t *testing.T) {
-	args := os.Args[4:]
-	if len(args) == 5 {
-		id, _ := strconv.Atoi(args[0])
-		n, _ := strconv.Atoi(args[1])
-		t, _ := strconv.Atoi(args[2])
-		clients, _ := strconv.Atoi(args[3])
-		tmp, _ := strconv.Atoi(args[4])
-		scenario := config.Scenario(tmp)
-
-		initializeForTestBc(id, n, t, clients, scenario)
+	if (variables.ID % 2) == 0 {
+		go modules.MultiValuedConsensus(2, []byte("LFC"))
 	} else {
-		log.Fatal("Arguments should be '<id> <n> <f> <k> <scenario>")
+		go modules.MultiValuedConsensus(2, []byte("lfc"))
 	}
 
-	/*** Start Testing ***/
+	go modules.MultiValuedConsensus(3, []byte("aek"))
 
-	go modules.BinaryConsensus(1, 0)
+	go modules.MultiValuedConsensus(4, []byte("AEK"))
 
-	go modules.BinaryConsensus(2, 1)
+	if (variables.ID % 2) == 0 {
+		go modules.MultiValuedConsensus(5, []byte("LFC"))
+	} else {
+		go modules.MultiValuedConsensus(5, []byte("lfc"))
+	}
 
-	go modules.BinaryConsensus(3, uint(variables.ID%2))
-
-	go modules.BinaryConsensus(4, 0)
-
-	go modules.BinaryConsensus(5, 1)
-
-	go modules.BinaryConsensus(6, uint(variables.ID%2))
+	go modules.MultiValuedConsensus(6, []byte("aek"))
 
 	/*** End Testing ***/
 
@@ -81,7 +60,7 @@ func TestBConsensus(t *testing.T) {
 }
 
 // Initializes the environment for the test
-func initializeForTestBc(id int, n int, t int, clients int, scenario config.Scenario) {
+func initializeForTestMvc(id int, n int, t int, clients int, scenario config.Scenario) {
 	variables.Initialize(id, n, t, clients)
 
 	if variables.Remote {

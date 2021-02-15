@@ -7,6 +7,7 @@ import (
 	"BFTWithoutSignatures/variables"
 	"bytes"
 	"encoding/gob"
+	"log"
 	"sync"
 )
 
@@ -18,85 +19,86 @@ var (
 // BinaryConsensus - The method that is called to initiate the BC module
 func BinaryConsensus(bcid int, initVal uint) {
 	est := initVal
-	go func() { // goroutine to run forever
-		for round := 1; ; round++ {
-			id := computeUniqueIdentifier(bcid, round)
-			logger.OutLogger.Print(id, ". Bcid:", bcid, "  Round:", round, "\n")
+	for round := 1; ; round++ {
+		id := computeUniqueIdentifier(bcid, round)
+		logger.OutLogger.Print(id, ".BC: bcid-", bcid, "  round-", round, "\n")
 
-			// BV_broadcast of the est value of the round
-			BvBroadcast(id, est)
+		// BV_broadcast of the est value of the round
+		go BvBroadcast(id, est)
 
-			// wait until not empty binValues
-			for {
-				mutex.Lock()
-				if len(binValues[id]) != 0 {
-					mutex.Unlock()
-					break
-				}
+		// Wait until not empty binValues
+		for {
+			mutex.Lock()
+			if len(binValues[id]) != 0 {
 				mutex.Unlock()
+				break
+			}
+			mutex.Unlock()
+		}
+
+		// Do i broadcast only the first value or both if there are two in binValues?
+		broadcast("AUX", types.NewBcMessage(id, binValues[id][0]))
+
+		// START Variables initialization
+		values := make([]uint, 0)
+		rec := make(map[int]uint)
+		rec[variables.ID] = binValues[id][0] // count the value just broadcasted
+
+		count := make(map[uint]int, 2)
+		count[0], count[1] = 0, 0
+		count[rec[variables.ID]]++ // Does my initial value count??
+
+		if _, in := messenger.BcChannel[id]; !in {
+			messenger.BcChannel[id] = make(chan struct {
+				BcMessage types.BcMessage
+				From      int
+			})
+		}
+		// END Variables initialization
+
+		for message := range messenger.BcChannel[id] {
+			// only one value can be received from each process
+			if _, in := rec[message.From]; in {
+				continue
 			}
 
-			// Do i broadcast only the first value or both if there are two in binValues?
-			broadcast("AUX", types.NewBcMessage(id, binValues[id][0]))
+			rec[message.From] = message.BcMessage.Value
+			count[message.BcMessage.Value]++
 
-			// START Variables initialization
-			values := make([]uint, 0)
-			rec := make(map[int]uint)
-			rec[variables.ID] = binValues[id][0] // count the value just broadcasted
-
-			count := make(map[uint]int, 2)
-			count[0], count[1] = 0, 0
-			count[rec[variables.ID]]++ // Does my initial value count??
-
-			if _, in := messenger.BcChannel[id]; !in {
-				messenger.BcChannel[id] = make(chan struct {
-					BcMessage types.BcMessage
-					From      int
-				})
+			// Wait until (n-t) AUX messages with the same value v
+			if (count[0] >= (variables.N-variables.F) && inList(0, binValues[id])) &&
+				(count[1] >= (variables.N-variables.F) && inList(1, binValues[id])) {
+				values = append(values, 0)
+				values = append(values, 1)
+			} else if count[0] >= (variables.N-variables.F) && inList(0, binValues[id]) {
+				values = append(values, 0)
+			} else if count[1] >= (variables.N-variables.F) && inList(1, binValues[id]) {
+				values = append(values, 1)
 			}
-			// END Variables initialization
 
-			for message := range messenger.BcChannel[id] {
-				// only one value can be received from each process
-				if _, in := rec[message.From]; in {
-					continue
-				}
+			if len(values) != 0 {
+				// TODO: implement a common coin algorithm
+				coin := uint(id % 2) // Obtain the common coin value [ random() ]
 
-				rec[message.From] = message.BcMessage.Value
-				count[message.BcMessage.Value]++
+				logger.OutLogger.Print(id, ".BC:  vals-", values, "  coin-", coin, "\n")
 
-				// wait until (n-t) AUX messages with the same value v
-				if (count[0] >= (variables.N-variables.F) && inList(0, binValues[id])) &&
-					(count[1] >= (variables.N-variables.F) && inList(1, binValues[id])) {
-					values = append(values, 0)
-					values = append(values, 1)
-				} else if count[0] >= (variables.N-variables.F) && inList(0, binValues[id]) {
-					values = append(values, 0)
-				} else if count[1] >= (variables.N-variables.F) && inList(1, binValues[id]) {
-					values = append(values, 1)
-				}
-
-				if len(values) != 0 {
-					// TODO: implement a common coin algorithm
-					coin := uint(id % 2) // Obtain the common coin value [ random() ]
-
-					logger.OutLogger.Print(id, ". Vals:", values, "  Coin:", coin, "\n")
-
-					if len(values) == 2 {
-						est = coin
-					} else if len(values) == 1 {
-						if values[0] == coin {
-							decide(id, values[0])
-							return // In the paper it says that it never ends but that does not add anything to the algorithm
-						}
-						est = values[0]
+				if len(values) == 2 {
+					est = coin
+				} else if len(values) == 1 {
+					if values[0] == coin {
+						logger.OutLogger.Print(id, ".BC:  decide-", values[0], "\n")
+						log.Println(variables.ID, "|", id, ".BC:  decide-", values[0])
+						decide(bcid, values[0])
+						return // In the paper it says that it never ends but that does not add anything to the algorithm
 					}
-
-					break
+					est = values[0]
 				}
+
+				break
 			}
 		}
-	}()
+	}
+
 }
 
 // BvBroadcast - Implements the BV_broadcast functionality
@@ -127,39 +129,38 @@ func BvBroadcast(identifier int, initVal uint) {
 	broadcast("EST", types.NewBcMessage(identifier, initVal))
 	broadcasted[initVal] = true
 
-	go func() { // goroutine to run forever
-		if _, in := messenger.BvbChannel[identifier]; !in {
-			messenger.BvbChannel[identifier] = make(chan struct {
-				BcMessage types.BcMessage
-				From      int
-			})
+	if _, in := messenger.BvbChannel[identifier]; !in {
+		messenger.BvbChannel[identifier] = make(chan struct {
+			BcMessage types.BcMessage
+			From      int
+		})
+	}
+
+	for message := range messenger.BvbChannel[identifier] {
+		tag := message.BcMessage.Tag
+		val := message.BcMessage.Value
+		if received[message.From] < 2 { // accept only 2 msgs from other servers
+			received[message.From]++
+			counter[val]++
 		}
 
-		for message := range messenger.BvbChannel[identifier] {
-			tag := message.BcMessage.Tag
-			val := message.BcMessage.Value
-			if received[message.From] < 2 { // accept only 2 msgs from other servers
-				received[message.From]++
-				counter[val]++
-			}
-
-			if counter[val] >= (variables.F+1) && !broadcasted[val] {
-				broadcast("EST", types.NewBcMessage(tag, val))
-				broadcasted[val] = true
-			}
-
-			if counter[val] >= ((2*variables.F)+1) && !inList(val, binValues[tag]) {
-				mutex.Lock()
-				binValues[tag] = append(binValues[tag], val)
-				mutex.Unlock()
-			}
-
-			logger.OutLogger.Print(tag, ". BinValues: ", binValues[tag], "\n")
+		if counter[val] >= (variables.F+1) && !broadcasted[val] {
+			broadcast("EST", types.NewBcMessage(tag, val))
+			broadcasted[val] = true
 		}
-	}()
+
+		if counter[val] >= ((2*variables.F)+1) && !inList(val, binValues[tag]) {
+			mutex.Lock()
+			binValues[tag] = append(binValues[tag], val)
+			mutex.Unlock()
+		}
+
+		logger.OutLogger.Print(tag, ".BC:  bin_values-", binValues[tag], "\n")
+	}
+
 }
 
-func broadcast(tag string, bcMessage *types.BcMessage) {
+func broadcast(tag string, bcMessage types.BcMessage) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(bcMessage)
@@ -179,8 +180,7 @@ func broadcast(tag string, bcMessage *types.BcMessage) {
 }
 
 func decide(id int, value uint) {
-	// Probably i will put the result in a chan or something like this to pass it to MVC
-	logger.OutLogger.Print(id, ". Decide: ", value, "\n")
+	BCAnswer[id] <- value
 }
 
 /* -------------------------------- Helper Functions -------------------------------- */
@@ -195,7 +195,7 @@ func inList(a uint, list []uint) bool {
 	return false
 }
 
-// Uses Cantor's pairing func to create a unique num from (bcid, BC round) pair
+// Uses Cantor's pairing function to create a unique num from (bcid, BC round) pair
 func computeUniqueIdentifier(a int, b int) int {
 	res := (a * a) + (3 * a) + (2 * a * b) + b + (b * b)
 	res = res / 2

@@ -1,10 +1,12 @@
 # BFTWithoutSignatures
-BFTWithoutSignatures is a Golang with ZeroMQ implementation of the algorithm:
+<div style="font-size: 15px">
+A Golang with ZeroMQ implementation of the algorithm:
+</div>
 <div style="font-size: 15px">
 From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols without Signatures
 </div>
 <div style="font-size: 13px">
-    By Miguel Correia, Nuno Ferreira Neves and Paulo Verissimo
+    By Miguel Correia, Nuno Ferreira Neves, Paulo Verissimo
 </div>
 
 ## Modules
@@ -16,7 +18,16 @@ that decides, decides b.
 - Agreement: no two correct processes decide differently.
 - Termination: every correct process eventually decides.
 
-#### Reliable Broadcast
+### Reliable Broadcast
+A reliable broadcast protocol ensures that all correct processes deliver the same messages,
+and that messages broadcast by correct processes are delivered. It can be defined in terms
+of the following properties:
+- Validity: if a correct process broadcasts a message M, then some correct process
+eventually delivers M.
+- Agreement: if a correct process delivers a message M, then all correct processes
+eventually deliver M.
+- Integrity: every correct process p delivers at most one message M, and if sender(M) is
+correct then M was previously broadcast by sender(M).
 
 #### Multi-Valued Consensus
 

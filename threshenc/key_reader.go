@@ -34,7 +34,7 @@ func ReadKeys(folder string) {
 
 	VerificationKeys = make(map[int]*rsa.PublicKey, variables.N)
 	for i := 0; i < variables.N; i++ {
-		verificationFile := folder + "verification_" + strconv.Itoa(i) + ".pem"
+		verificationFile := folder + "verification_" + strconv.Itoa(i) + ".key"
 		vKey, err := readKeyFromFile(verificationFile)
 		if err != nil {
 			log.Fatal(err)

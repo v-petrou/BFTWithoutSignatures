@@ -50,6 +50,18 @@ var (
 		From      int
 	})
 
+	// RbChannel - Channel to put the RB messages in
+	RbChannel = make(map[int]chan struct {
+		RbMessage types.RbMessage
+		From      int
+	})
+
+	// MvcChannel - Channel to put the MVC messages in
+	MvcChannel = make(map[int]chan struct {
+		MvcMessage types.MvcMessage
+		From       int
+	})
+
 	// RequestChannel - Channel to put the client requests in
 	RequestChannel = make(chan *types.ClientMessage, 100)
 )
@@ -313,6 +325,50 @@ func handleMessage(msg []byte) {
 			BcMessage types.BcMessage
 			From      int
 		}{BcMessage: *bcMessage, From: message.From}
+
+	case "RB":
+		rbMessage := new(types.RbMessage)
+		buf := bytes.NewBuffer(message.Payload)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&rbMessage)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		rbid := rbMessage.Rbid
+		if _, in := RbChannel[rbid]; !in {
+			RbChannel[rbid] = make(chan struct {
+				RbMessage types.RbMessage
+				From      int
+			})
+		}
+
+		RbChannel[rbid] <- struct {
+			RbMessage types.RbMessage
+			From      int
+		}{RbMessage: *rbMessage, From: message.From}
+
+	case "MVC":
+		mvcMessage := new(types.MvcMessage)
+		buf := bytes.NewBuffer(message.Payload)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&mvcMessage)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		cid := mvcMessage.Cid
+		if _, in := MvcChannel[cid]; !in {
+			MvcChannel[cid] = make(chan struct {
+				MvcMessage types.MvcMessage
+				From       int
+			})
+		}
+
+		MvcChannel[cid] <- struct {
+			MvcMessage types.MvcMessage
+			From       int
+		}{MvcMessage: *mvcMessage, From: message.From}
 	}
 }
 

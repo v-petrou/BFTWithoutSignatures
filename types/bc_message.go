@@ -13,12 +13,12 @@ type BcMessage struct {
 }
 
 // NewBcMessage - Creates a new Bc message
-func NewBcMessage(tag int, value uint) *BcMessage {
-	return &BcMessage{Tag: tag, Value: value}
+func NewBcMessage(tag int, value uint) BcMessage {
+	return BcMessage{Tag: tag, Value: value}
 }
 
 // GobEncode - Binary Consensus message encoder
-func (bcm *BcMessage) GobEncode() ([]byte, error) {
+func (bcm BcMessage) GobEncode() ([]byte, error) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(bcm.Tag)

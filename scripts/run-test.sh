@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST=TestBConsensus
+TEST=TestMVConsensus
 
 N=10
 T=0

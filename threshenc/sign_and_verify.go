@@ -34,7 +34,7 @@ func VerifyMessage(message []byte, signature []byte, i int) bool {
 
 	err = rsa.VerifyPSS(VerificationKeys[i], crypto.SHA256, hash.Sum(nil), signature, nil)
 	if err != nil {
-		logger.OutLogger.Println(err)
+		logger.ErrLogger.Println(err)
 		return false
 	}
 	return true

@@ -30,7 +30,7 @@ func GenerateKeys(N int, folder string) {
 			log.Fatal(err)
 		}
 
-		verificationFile := folder + "verification_" + strconv.Itoa(i) + ".pem"
+		verificationFile := folder + "verification_" + strconv.Itoa(i) + ".key"
 		err = writeKeyToFile(publicKeyBytes, verificationFile)
 		if err != nil {
 			log.Fatal(err)
