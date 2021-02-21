@@ -8,15 +8,16 @@ import (
 
 // RbMessage - Reliable Broadcast message struct
 type RbMessage struct {
-	Rbid  int
-	Tag   string
-	Type  string
-	Value []byte
+	Rbid    int
+	Tag     string // (init, echo, ready)
+	Type    string // What is the type of the value (MVC, VC, ABC)
+	Process int
+	Value   []byte
 }
 
 // NewRbMessage - Creates a new Rb message
-func NewRbMessage(rbid int, tag string, t string, value []byte) RbMessage {
-	return RbMessage{Rbid: rbid, Tag: tag, Type: t, Value: value}
+func NewRbMessage(rbid int, tag string, t string, process int, value []byte) RbMessage {
+	return RbMessage{Rbid: rbid, Tag: tag, Type: t, Process: process, Value: value}
 }
 
 // GobEncode - Reliable Broadcast message encoder
@@ -32,6 +33,10 @@ func (rbm RbMessage) GobEncode() ([]byte, error) {
 		logger.ErrLogger.Fatal(err)
 	}
 	err = encoder.Encode(rbm.Type)
+	if err != nil {
+		logger.ErrLogger.Fatal(err)
+	}
+	err = encoder.Encode(rbm.Process)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
@@ -55,6 +60,10 @@ func (rbm *RbMessage) GobDecode(buf []byte) error {
 		logger.ErrLogger.Fatal(err)
 	}
 	err = decoder.Decode(&rbm.Type)
+	if err != nil {
+		logger.ErrLogger.Fatal(err)
+	}
+	err = decoder.Decode(&rbm.Process)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}

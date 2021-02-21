@@ -16,9 +16,8 @@ import (
 	"testing"
 )
 
-func TestMVConsensus(t *testing.T) {
+func TestRBroadcast(t *testing.T) {
 	args := os.Args[5:]
-
 	if len(args) == 5 {
 		id, _ := strconv.Atoi(args[0])
 		n, _ := strconv.Atoi(args[1])
@@ -27,32 +26,32 @@ func TestMVConsensus(t *testing.T) {
 		tmp, _ := strconv.Atoi(args[4])
 		scenario := config.Scenario(tmp)
 
-		initializeForTestMvc(id, n, t, clients, scenario)
+		initializeForTestRb(id, n, t, clients, scenario)
 	} else {
 		log.Fatal("Arguments should be '<id> <n> <f> <k> <scenario>")
 	}
 
 	/*** Start Testing ***/
 
-	go modules.MultiValuedConsensus(1, []byte("AEK"))
+	go modules.ReliableBroadcast(1, "MVC", []byte("AEK"))
 
 	if (variables.ID % 2) == 0 {
-		go modules.MultiValuedConsensus(2, []byte("LFC"))
+		go modules.ReliableBroadcast(2, "MVC", []byte("LFC"))
 	} else {
-		go modules.MultiValuedConsensus(2, []byte("lfc"))
+		go modules.ReliableBroadcast(2, "MVC", []byte("lfc"))
 	}
 
-	go modules.MultiValuedConsensus(3, []byte("aek"))
+	go modules.ReliableBroadcast(3, "MVC", []byte("aek"))
 
-	go modules.MultiValuedConsensus(4, []byte("AEK"))
+	go modules.ReliableBroadcast(4, "MVC", []byte("AEK"))
 
 	if (variables.ID % 2) == 0 {
-		go modules.MultiValuedConsensus(5, []byte("LFC"))
+		go modules.ReliableBroadcast(5, "MVC", []byte("LFC"))
 	} else {
-		go modules.MultiValuedConsensus(5, []byte("lfc"))
+		go modules.ReliableBroadcast(5, "MVC", []byte("lfc"))
 	}
 
-	go modules.MultiValuedConsensus(6, []byte("aek"))
+	go modules.ReliableBroadcast(6, "MVC", []byte("aek"))
 
 	/*** End Testing ***/
 
@@ -61,7 +60,7 @@ func TestMVConsensus(t *testing.T) {
 }
 
 // Initializes the environment for the test
-func initializeForTestMvc(id int, n int, t int, clients int, scenario config.Scenario) {
+func initializeForTestRb(id int, n int, t int, clients int, scenario config.Scenario) {
 	variables.Initialize(id, n, t, clients)
 
 	if variables.Remote {

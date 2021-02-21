@@ -1,7 +1,5 @@
 # BFTWithoutSignatures
-<div style="font-size: 15px">
 A Golang with ZeroMQ implementation of the algorithm:
-</div>
 <div style="font-size: 15px">
 From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols without Signatures
 </div>
@@ -10,6 +8,13 @@ From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols with
 </div>
 
 ## Modules
+| [Atomic Broadcast](#atomic-broadcast)                                                |
+| :-----------------------------------------------------------------------------------:|
+| [Vector Consensus](#vector-consensus)                                                |
+| [Multi-Valued Consensus](#multi-valued-consensus)                                    |
+| [Binary Consensus](#binary-consensus)  \|  [Reliable Broadcast](#reliable-broadcast) |
+| **Reliable Channels**                                                                |
+
 ### Binary Consensus
 A binary consensus protocol performs consensus on a binary value b ∈ {0, 1}. The problem
 can be formally defined in terms of three properties:
@@ -29,7 +34,16 @@ eventually deliver M.
 - Integrity: every correct process p delivers at most one message M, and if sender(M) is
 correct then M was previously broadcast by sender(M).
 
-#### Multi-Valued Consensus
+### Multi-Valued Consensus
+A multi-valued consensus protocol make an agreement on values with an arbitrary size. The definition
+properties are:
+- Validity 1: If all correct processes propose the same value v, then any correct process that
+decides, decides v.
+- Validity 2: If a correct process decides v, then v was proposed by some process or v = ⊥.
+- Validity 3: If a value v is proposed only by corrupt processes, then no correct process that
+decides, decides v.
+- Agreement: No two correct processes decide differently.
+- Termination: Every correct process eventually decides.
 
 #### Vector Consensus
 
@@ -66,14 +80,15 @@ When you are done and want to kill the processes run:
 bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 ```
 
-## Current project state
+## Current Project State
 - [x] Messenger
 - [x] Trusted Dealer
+- [x] Binary-Value Broadcast
+- [x] Binary Consensus
 
 ## TODO
 - [ ] Threshold Encryption
 - [ ] Common-Coin
-- [ ] Binary Consensus
 - [ ] Reliable Broadcast
 - [ ] Multi-Valued Consensus
 - [ ] Vector Consensus

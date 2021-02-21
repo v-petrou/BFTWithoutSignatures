@@ -7,7 +7,6 @@ import (
 	"BFTWithoutSignatures/variables"
 	"bytes"
 	"encoding/gob"
-	"log"
 	"sync"
 )
 
@@ -20,7 +19,7 @@ var (
 func BinaryConsensus(bcid int, initVal uint) {
 	est := initVal
 	for round := 1; ; round++ {
-		id := computeUniqueIdentifier(bcid, round)
+		id := ComputeUniqueIdentifier(bcid, round)
 		logger.OutLogger.Print(id, ".BC: bcid-", bcid, "  round-", round, "\n")
 
 		// BV_broadcast of the est value of the round
@@ -36,17 +35,16 @@ func BinaryConsensus(bcid int, initVal uint) {
 			mutex.Unlock()
 		}
 
-		// Do i broadcast only the first value or both if there are two in binValues?
 		broadcast("AUX", types.NewBcMessage(id, binValues[id][0]))
 
 		// START Variables initialization
 		values := make([]uint, 0)
 		rec := make(map[int]uint)
-		rec[variables.ID] = binValues[id][0] // count the value just broadcasted
+		rec[variables.ID] = binValues[id][0]
 
 		count := make(map[uint]int, 2)
 		count[0], count[1] = 0, 0
-		count[rec[variables.ID]]++ // Does my initial value count??
+		count[rec[variables.ID]]++
 
 		if _, in := messenger.BcChannel[id]; !in {
 			messenger.BcChannel[id] = make(chan struct {
@@ -57,9 +55,8 @@ func BinaryConsensus(bcid int, initVal uint) {
 		// END Variables initialization
 
 		for message := range messenger.BcChannel[id] {
-			// only one value can be received from each process
 			if _, in := rec[message.From]; in {
-				continue
+				continue // Only one value can be received from each process
 			}
 
 			rec[message.From] = message.BcMessage.Value
@@ -77,20 +74,16 @@ func BinaryConsensus(bcid int, initVal uint) {
 			}
 
 			if len(values) != 0 {
-				// TODO: implement a common coin algorithm
-				coin := uint(id % 2) // Obtain the common coin value [ random() ]
-
+				coin := random(id)
 				logger.OutLogger.Print(id, ".BC:  vals-", values, "  coin-", coin, "\n")
 
 				if len(values) == 2 {
 					est = coin
-				} else if len(values) == 1 {
-					if values[0] == coin {
-						logger.OutLogger.Print(id, ".BC:  decide-", values[0], "\n")
-						log.Println(variables.ID, "|", id, ".BC:  decide-", values[0])
-						decide(bcid, values[0])
-						return // In the paper it says that it never ends but that does not add anything to the algorithm
-					}
+				} else if len(values) == 1 && values[0] == coin {
+					logger.OutLogger.Print(id, ".BC:  decide-", values[0], "\n")
+					decide(bcid, values[0])
+					return
+				} else if len(values) == 1 && values[0] != coin {
 					est = values[0]
 				}
 
@@ -103,27 +96,26 @@ func BinaryConsensus(bcid int, initVal uint) {
 
 // BvBroadcast - Implements the BV_broadcast functionality
 func BvBroadcast(identifier int, initVal uint) {
-	// START Variables initialization
+	// START variables initialization
 	broadcasted := make(map[uint]bool, 2)
 	broadcasted[0], broadcasted[1] = false, false
 
 	received := make(map[int]int, (variables.N - 1))
 	for i := 0; i < variables.N; i++ {
-		// Not myself
 		if i == variables.ID {
-			continue
+			continue // Not myself
 		}
 		received[i] = 0
 	}
 
 	counter := make(map[uint]int, 2)
 	counter[0], counter[1] = 0, 0
-	counter[initVal]++ // Does my initial value count??
+	counter[initVal]++
 
 	mutex.Lock()
 	binValues[identifier] = make([]uint, 0, 2)
 	mutex.Unlock()
-	// END Variables initialization
+	// END variables initialization
 
 	// Broadcast initial value
 	broadcast("EST", types.NewBcMessage(identifier, initVal))
@@ -139,7 +131,7 @@ func BvBroadcast(identifier int, initVal uint) {
 	for message := range messenger.BvbChannel[identifier] {
 		tag := message.BcMessage.Tag
 		val := message.BcMessage.Value
-		if received[message.From] < 2 { // accept only 2 msgs from other servers
+		if received[message.From] < 2 { // Max 2 msgs can be accepted from other servers
 			received[message.From]++
 			counter[val]++
 		}
@@ -179,6 +171,11 @@ func broadcast(tag string, bcMessage types.BcMessage) {
 	messenger.Broadcast(message)
 }
 
+// TODO: implement a more Byzantine Tolerant Common-Coin algorithm
+func random(id int) uint {
+	return uint(id % 2)
+}
+
 func decide(id int, value uint) {
 	BCAnswer[id] <- value
 }
@@ -195,8 +192,8 @@ func inList(a uint, list []uint) bool {
 	return false
 }
 
-// Uses Cantor's pairing function to create a unique num from (bcid, BC round) pair
-func computeUniqueIdentifier(a int, b int) int {
+// ComputeUniqueIdentifier - Creates a unique num from (bcid,round) pair (Cantor's pairing func)
+func ComputeUniqueIdentifier(a int, b int) int {
 	res := (a * a) + (3 * a) + (2 * a * b) + b + (b * b)
 	res = res / 2
 	return res

@@ -17,7 +17,7 @@ import (
 )
 
 func TestBvBroadcast(t *testing.T) {
-	args := os.Args[4:]
+	args := os.Args[5:]
 	if len(args) == 5 {
 		id, _ := strconv.Atoi(args[0])
 		n, _ := strconv.Atoi(args[1])

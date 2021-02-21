@@ -20,51 +20,54 @@ var (
 
 // MultiValuedConsensus - The method that is called to initiate the MVC module
 func MultiValuedConsensus(cid int, v []byte) {
-	// Initialize variables
+	// START Variables initialization
 	init := make(map[int]types.MvcMessage)
 	vect := make(map[int]types.MvcMessage)
-
 	BCAnswer[cid] = make(chan uint, 1)
+
+	if _, in := messenger.MvcChannel[cid]; !in {
+		messenger.MvcChannel[cid] = make(chan struct {
+			MvcMessage types.MvcMessage
+			From       int
+		})
+	}
+	// END Variables initialization
 
 	/* ----------------------------------- Task 1 ----------------------------------- */
 	go func() {
 		init[variables.ID] = types.NewMvcMessage(cid, "INIT", v, nil)
-		broadcastMVC(init[variables.ID]) // Replace with RB if needed
+		broadcastMVC(ComputeUniqueIdentifier(cid, 1), init[variables.ID])
 
-		// Wait until at least (n-f) INIT messages
-		for {
+		for { // Wait until at least (n-f) INIT messages
 			if len(init) >= (variables.N - variables.F) {
 				break
 			}
 		}
 
-		// Fill vector with values received in init else DEFAULT
+		// Fill vector with values in init else DEFAULT and calculate w value
 		vector := fillVector(init)
-
 		w := calculateW(vector)
 		logger.OutLogger.Print(cid, ".MVC:\n\tinit-", init, "\n\tvector-", vector, " --> ", w, "\n")
 
 		vect[variables.ID] = types.NewMvcMessage(cid, "VECT", w, vector)
-		broadcastMVC(vect[variables.ID])
+		broadcastMVC(ComputeUniqueIdentifier(cid, 2), vect[variables.ID])
 
-		// Wait until at least (n-f) valid VECT messages
-		for {
+		for { // Wait until at least (n-f) valid VECT messages
 			if len(vect) >= (variables.N - variables.F) {
 				break
 			}
 		}
 
-		// Fill vectorW with values received in vect else DEFAULT
+		// Fill vectorW with values in vect else DEFAULT and calculate BC input value
 		vectorW := fillVector(vect)
-
 		bVal := calculateBinaryValue(vectorW)
-		logger.OutLogger.Print(cid, ".MVC:\n\tvect-", vect, "\n\tvector-", vectorW, " --> ", bVal, "\n")
+		logger.OutLogger.Print(cid, ".MVC:\n\tvectW-", vect, "\n\tvectorW-", vectorW, " --> ", bVal, "\n")
 
 		go BinaryConsensus(cid, bVal)
 		c := <-BCAnswer[cid]
 
 		if c == 0 {
-			// Probably i will put the result in a chan or something like this to pass it to VC
+			// TODO: put the result in a chan to pass it to VC
 			logger.OutLogger.Print(cid, ".MVC  decide-", DEFAULT, "\n")
 			log.Println(variables.ID, "|", cid, ".MVC  decide-", DEFAULT)
 			return
@@ -74,7 +77,7 @@ func MultiValuedConsensus(cid int, v []byte) {
 			counter, dict := findOccurrences(fillVector(vect))
 			for k, v := range counter {
 				if v >= (variables.N - (2 * variables.F)) {
-					// Probably i will put the result in a chan or something like this to pass it to VC
+					// TODO: put the result in a chan to pass it to VC
 					logger.OutLogger.Print(cid, ".MVC  decide-", dict[k], "\n")
 					log.Println(variables.ID, "|", cid, ".MVC  decide-", dict[k])
 					return
@@ -85,36 +88,27 @@ func MultiValuedConsensus(cid int, v []byte) {
 
 	/* ----------------------------------- Task 2 ----------------------------------- */
 	go func() {
-		if _, in := messenger.MvcChannel[cid]; !in {
-			messenger.MvcChannel[cid] = make(chan struct {
-				MvcMessage types.MvcMessage
-				From       int
-			})
-		}
-
 		for message := range messenger.MvcChannel[cid] {
 			if message.MvcMessage.Type == "INIT" {
-				// If already received from that process continue
 				if _, in := init[message.From]; in {
-					continue
+					continue // Only one value can be received from each process
 				}
 				init[message.From] = message.MvcMessage
 
 			} else if message.MvcMessage.Type == "VECT" {
-				// If already received from that process continue
 				if _, in := vect[message.From]; in {
-					continue
+					continue // Only one value can be received from each process
 				}
-				// If a valid VECT message add it in the map
+
 				if checkVectValidity(message.MvcMessage, init) {
-					vect[message.From] = message.MvcMessage
+					vect[message.From] = message.MvcMessage // Accept only valid VECT messages
 				}
 			}
 		}
 	}()
 }
 
-func broadcastMVC(mvcMessage types.MvcMessage) {
+func broadcastMVC(id int, mvcMessage types.MvcMessage) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(mvcMessage)
@@ -122,7 +116,15 @@ func broadcastMVC(mvcMessage types.MvcMessage) {
 		logger.ErrLogger.Fatal(err)
 	}
 
-	messenger.Broadcast(types.NewMessage(w.Bytes(), "MVC"))
+	msg := types.NewMessage(w.Bytes(), "MVC")
+	w = new(bytes.Buffer)
+	encoder = gob.NewEncoder(w)
+	err = encoder.Encode(msg)
+	if err != nil {
+		logger.ErrLogger.Fatal(err)
+	}
+
+	go ReliableBroadcast(id, "MVC", w.Bytes())
 }
 
 /* -------------------------------- Helper Functions -------------------------------- */

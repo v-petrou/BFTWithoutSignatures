@@ -51,7 +51,7 @@ var (
 	})
 
 	// RbChannel - Channel to put the RB messages in
-	RbChannel = make(map[int]chan struct {
+	RbChannel = make(map[string]map[int]chan struct {
 		RbMessage types.RbMessage
 		From      int
 	})
@@ -159,7 +159,27 @@ func InitializeMessenger() {
 		logger.OutLogger.Println("Response to Client", i, "on", responseAddr)
 	}
 
+	initRBChannels()
+
 	logger.OutLogger.Print("-----------------------------------------\n\n")
+}
+
+// Initializes the RB channels
+func initRBChannels() {
+	RbChannel["MVC"] = make(map[int]chan struct {
+		RbMessage types.RbMessage
+		From      int
+	})
+
+	RbChannel["VC"] = make(map[int]chan struct {
+		RbMessage types.RbMessage
+		From      int
+	})
+
+	RbChannel["ABC"] = make(map[int]chan struct {
+		RbMessage types.RbMessage
+		From      int
+	})
 }
 
 // Broadcast - Broadcasts a message to all other servers
@@ -221,7 +241,7 @@ func Subscribe() {
 					logger.ErrLogger.Fatal(err)
 				}
 
-				go handleMessage(message)
+				go HandleMessage(message)
 
 				_, err = ReceiveSockets[i].Send("OK.", 0)
 				if err != nil {
@@ -264,8 +284,8 @@ func handleRequest(msg []byte) {
 	RequestChannel <- message
 }
 
-// Handles the messages from the other servers
-func handleMessage(msg []byte) {
+// HandleMessage - Handles the messages from the other servers
+func HandleMessage(msg []byte) {
 	message := new(types.Message)
 	buffer := bytes.NewBuffer([]byte(msg))
 	decoder := gob.NewDecoder(buffer)
@@ -336,14 +356,15 @@ func handleMessage(msg []byte) {
 		}
 
 		rbid := rbMessage.Rbid
-		if _, in := RbChannel[rbid]; !in {
-			RbChannel[rbid] = make(chan struct {
+		t := rbMessage.Type
+		if _, in := RbChannel[t][rbid]; !in {
+			RbChannel[t][rbid] = make(chan struct {
 				RbMessage types.RbMessage
 				From      int
 			})
 		}
 
-		RbChannel[rbid] <- struct {
+		RbChannel[t][rbid] <- struct {
 			RbMessage types.RbMessage
 			From      int
 		}{RbMessage: *rbMessage, From: message.From}
