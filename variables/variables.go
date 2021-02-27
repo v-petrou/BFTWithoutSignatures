@@ -21,6 +21,9 @@ var (
 
 	// Remote - If we are running locally or remotely
 	Remote bool
+
+	// DEFAULT - The default value that is used in the algorithms
+	DEFAULT []byte
 )
 
 // Initialize - Variables initializer method
@@ -31,4 +34,5 @@ func Initialize(id int, n int, t int, c int) {
 	T = t
 	Clients = c
 	Remote = false
+	DEFAULT = []byte("")
 }

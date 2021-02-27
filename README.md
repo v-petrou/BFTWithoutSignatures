@@ -13,7 +13,7 @@ From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols with
 | [Vector Consensus](#vector-consensus)                                                |
 | [Multi-Valued Consensus](#multi-valued-consensus)                                    |
 | [Binary Consensus](#binary-consensus)  \|  [Reliable Broadcast](#reliable-broadcast) |
-| **Reliable Channels**                                                                |
+| Reliable Channels                                                                    |
 
 ### Binary Consensus
 A binary consensus protocol performs consensus on a binary value b ∈ {0, 1}. The problem
@@ -37,15 +37,22 @@ correct then M was previously broadcast by sender(M).
 ### Multi-Valued Consensus
 A multi-valued consensus protocol make an agreement on values with an arbitrary size. The definition
 properties are:
-- Validity 1: If all correct processes propose the same value v, then any correct process that
+- Validity 1: if all correct processes propose the same value v, then any correct process that
 decides, decides v.
-- Validity 2: If a correct process decides v, then v was proposed by some process or v = ⊥.
-- Validity 3: If a value v is proposed only by corrupt processes, then no correct process that
+- Validity 2: if a correct process decides v, then v was proposed by some process or v = ⊥.
+- Validity 3: if a value v is proposed only by corrupt processes, then no correct process that
 decides, decides v.
-- Agreement: No two correct processes decide differently.
-- Termination: Every correct process eventually decides.
+- Agreement: two correct processes can not decide differently.
+- Termination: every correct process eventually decides.
 
-#### Vector Consensus
+### Vector Consensus
+Vector Consensus makes agreement on a vector with a subset of the values proposed, instead of a
+single value. The decided vector needs to have at least (2f + 1) values and its properties are:
+- Validity: every correct process that decides, decides on a vector V of size n:
+    * ∀pi: if pi is correct, then either V[i] is the value proposed by pi or ⊥;
+    * at least (f +1) elements of V were proposed by correct processes.
+- Agreement: no two correct processes decide differently.
+- Termination: every correct process eventually decides.
 
 #### Atomic Broadcast
 
@@ -85,12 +92,12 @@ bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 - [x] Trusted Dealer
 - [x] Binary-Value Broadcast
 - [x] Binary Consensus
+- [x] Reliable Broadcast
+- [x] Multi-Valued Consensus
 
 ## TODO
 - [ ] Threshold Encryption
 - [ ] Common-Coin
-- [ ] Reliable Broadcast
-- [ ] Multi-Valued Consensus
 - [ ] Vector Consensus
 - [ ] Atomic Broadcast
 

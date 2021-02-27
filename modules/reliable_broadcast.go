@@ -41,7 +41,11 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 
 	// Step 0
 	sendToAll(types.NewRbMessage(rbid, "INIT", mType, variables.ID, initVal))
+	sendToAll(types.NewRbMessage(rbid, "ECHO", mType, variables.ID, initVal))
+	sentEcho[variables.ID] = true
+
 	logger.OutLogger.Print(rbid, ".RB-", mType, ": INIT ", variables.ID, "\n")
+	logger.OutLogger.Print(rbid, ".RB-", mType, ": INIT->ECHO ", variables.ID, "\n")
 
 	for message := range messenger.RbChannel[mType][rbid] {
 		tag := message.RbMessage.Tag
@@ -91,7 +95,7 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 				if v >= ((2*variables.F)+1) && !accepted[instance] { // Step 3 - Accept v
 					go messenger.HandleMessage(dict[k])
 					accepted[instance] = true
-					logger.OutLogger.Print(rbid, ".RB  accept-", dict[k], " for ", instance, "\n")
+					logger.OutLogger.Print(rbid, ".RB accept for ", instance, "\n")
 
 				} else if v >= (variables.F+1) && !sentEcho[instance] { // Step 1
 					sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, dict[k]))

@@ -30,7 +30,7 @@ var (
 	ResponseSockets map[int]*zmq4.Socket
 )
 
-// Channels
+// Message Channels
 var (
 	// MessageChannel - Channel to put the messages that need to be transmitted in
 	MessageChannel = make(chan struct {
@@ -60,6 +60,12 @@ var (
 	MvcChannel = make(map[int]chan struct {
 		MvcMessage types.MvcMessage
 		From       int
+	})
+
+	// VcChannel - Channel to put the VC messages in
+	VcChannel = make(map[int]chan struct {
+		VcMessage types.VcMessage
+		From      int
 	})
 
 	// RequestChannel - Channel to put the client requests in
@@ -390,6 +396,28 @@ func HandleMessage(msg []byte) {
 			MvcMessage types.MvcMessage
 			From       int
 		}{MvcMessage: *mvcMessage, From: message.From}
+
+	case "VC":
+		vcMessage := new(types.VcMessage)
+		buf := bytes.NewBuffer(message.Payload)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&vcMessage)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		vcid := vcMessage.Vcid
+		if _, in := VcChannel[vcid]; !in {
+			VcChannel[vcid] = make(chan struct {
+				VcMessage types.VcMessage
+				From      int
+			})
+		}
+
+		VcChannel[vcid] <- struct {
+			VcMessage types.VcMessage
+			From      int
+		}{VcMessage: *vcMessage, From: message.From}
 	}
 }
 
