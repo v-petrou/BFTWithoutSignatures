@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"syscall"
 )
 
 // Initializer - Method that initializes all required processes
@@ -35,16 +36,30 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 	messenger.Subscribe()
 	go messenger.TransmitMessages()
 
+	cleanup()
+}
+
+func cleanup() {
 	terminate := make(chan os.Signal, 1)
-	signal.Notify(terminate, os.Interrupt)
+	signal.Notify(terminate,
+		os.Interrupt,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
 	go func() {
 		for range terminate {
-			for i := 0; i < n; i++ {
-				if i == id {
-					continue
+			for i := 0; i < variables.N; i++ {
+				if i == variables.ID {
+					continue // Not myself
 				}
 				messenger.ReceiveSockets[i].Close()
 				messenger.SendSockets[i].Close()
+			}
+
+			for i := 0; i < variables.Clients; i++ {
+				messenger.ServerSockets[i].Close()
+				messenger.ResponseSockets[i].Close()
 			}
 			os.Exit(0)
 		}

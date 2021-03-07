@@ -20,13 +20,12 @@ func BinaryConsensus(bcid int, initVal uint) {
 	est := initVal
 	for round := 1; ; round++ {
 		id := ComputeUniqueIdentifier(bcid, round)
-		logger.OutLogger.Print(id, ".BC: bcid-", bcid, "  round-", round, "\n")
+		logger.OutLogger.Print(id, ".BC: bcid-", bcid, " round-", round, "\n")
 
 		// BV_broadcast of the est value of the round
 		go BvBroadcast(id, est)
 
-		// Wait until not empty binValues
-		for {
+		for { // Wait until not empty binValues
 			mutex.Lock()
 			if len(binValues[id]) != 0 {
 				mutex.Unlock()
@@ -75,12 +74,12 @@ func BinaryConsensus(bcid int, initVal uint) {
 
 			if len(values) != 0 {
 				coin := random(id)
-				logger.OutLogger.Print(id, ".BC:  vals-", values, "  coin-", coin, "\n")
+				logger.OutLogger.Print(id, ".BC: vals-", values, " coin-", coin, "\n")
 
 				if len(values) == 2 {
 					est = coin
 				} else if len(values) == 1 && values[0] == coin {
-					logger.OutLogger.Print(id, ".BC:  decide-", values[0], "\n")
+					logger.OutLogger.Print(id, ".BC: decide-", values[0], "\n")
 					decide(bcid, values[0])
 					return
 				} else if len(values) == 1 && values[0] != coin {
@@ -147,7 +146,7 @@ func BvBroadcast(identifier int, initVal uint) {
 			mutex.Unlock()
 		}
 
-		logger.OutLogger.Print(tag, ".BC:  bin_values-", binValues[tag], "\n")
+		logger.OutLogger.Print(tag, ".BC: bin_values-", binValues[tag], "\n")
 	}
 
 }

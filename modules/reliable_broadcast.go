@@ -51,11 +51,8 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 		tag := message.RbMessage.Tag
 		instance := message.RbMessage.Process
 		if tag == "INIT" {
-			if _, in := initial[message.From]; in {
+			if _, in := initial[message.From]; message.From != instance || in {
 				continue // Only one value can be received from each process
-			}
-			if message.From != instance {
-				continue
 			}
 			initial[instance] = message.RbMessage.Value
 			sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, initial[message.From]))
@@ -68,8 +65,7 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 			}
 			echo[instance][message.From] = message.RbMessage.Value
 
-			counter, dict := countMessages(echo[instance])
-
+			counter, dict := CountMessages(echo[instance])
 			for k, v := range counter {
 				if v >= ((variables.N+variables.F)/2) && !sentEcho[instance] { // Step 1
 					sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, dict[k]))
@@ -89,13 +85,12 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 			}
 			ready[instance][message.From] = message.RbMessage.Value
 
-			counter, dict := countMessages(ready[instance])
-
+			counter, dict := CountMessages(ready[instance])
 			for k, v := range counter {
 				if v >= ((2*variables.F)+1) && !accepted[instance] { // Step 3 - Accept v
 					go messenger.HandleMessage(dict[k])
 					accepted[instance] = true
-					logger.OutLogger.Print(rbid, ".RB accept for ", instance, "\n")
+					logger.OutLogger.Print(rbid, ".RB accept-", instance, "\n")
 
 				} else if v >= (variables.F+1) && !sentEcho[instance] { // Step 1
 					sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, dict[k]))
@@ -124,7 +119,8 @@ func sendToAll(rbMessage types.RbMessage) {
 	messenger.Broadcast(message)
 }
 
-func countMessages(vector map[int][]byte) (map[int]int, map[int][]byte) {
+// CountMessages - Counts the messages received from RB
+func CountMessages(vector map[int][]byte) (map[int]int, map[int][]byte) {
 	counter := make(map[int]int)
 	dict := make(map[int][]byte)
 	for _, val := range vector {

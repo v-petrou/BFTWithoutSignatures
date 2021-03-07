@@ -30,7 +30,7 @@ var (
 	ResponseSockets map[int]*zmq4.Socket
 )
 
-// Message Channels
+// Channels for messages
 var (
 	// MessageChannel - Channel to put the messages that need to be transmitted in
 	MessageChannel = make(chan struct {
@@ -56,6 +56,12 @@ var (
 		From      int
 	})
 
+	// RbAbcChannel - Channel to put the RB messages for ABC in
+	RbAbcChannel = make(chan struct {
+		RbMessage types.RbMessage
+		From      int
+	})
+
 	// MvcChannel - Channel to put the MVC messages in
 	MvcChannel = make(map[int]chan struct {
 		MvcMessage types.MvcMessage
@@ -66,6 +72,12 @@ var (
 	VcChannel = make(map[int]chan struct {
 		VcMessage types.VcMessage
 		From      int
+	})
+
+	// AbcChannel - Channel to put the ABC messages in
+	AbcChannel = make(chan struct {
+		AbcMessage types.AbcMessage
+		From       int
 	})
 
 	// RequestChannel - Channel to put the client requests in
@@ -83,9 +95,8 @@ func InitializeMessenger() {
 	ReceiveSockets = make(map[int]*zmq4.Socket)
 	SendSockets = make(map[int]*zmq4.Socket)
 	for i := 0; i < variables.N; i++ {
-		// Not myself
 		if i == variables.ID {
-			continue
+			continue // Not myself
 		}
 
 		// ReceiveSockets initialization to get information from other servers
@@ -181,19 +192,13 @@ func initRBChannels() {
 		RbMessage types.RbMessage
 		From      int
 	})
-
-	RbChannel["ABC"] = make(map[int]chan struct {
-		RbMessage types.RbMessage
-		From      int
-	})
 }
 
 // Broadcast - Broadcasts a message to all other servers
 func Broadcast(message types.Message) {
 	for i := 0; i < variables.N; i++ {
-		// Not myself
 		if i == variables.ID {
-			continue
+			continue // Not myself
 		}
 		SendMessage(message, i)
 	}
@@ -236,9 +241,8 @@ func TransmitMessages() {
 func Subscribe() {
 	// Gets messages from other servers and handles them
 	for i := 0; i < variables.N; i++ {
-		// Not myself
 		if i == variables.ID {
-			continue
+			continue // Not myself
 		}
 		go func(i int) { // Initializes them with a goroutine and waits forever
 			for {
@@ -362,15 +366,29 @@ func HandleMessage(msg []byte) {
 		}
 
 		rbid := rbMessage.Rbid
-		t := rbMessage.Type
-		if _, in := RbChannel[t][rbid]; !in {
-			RbChannel[t][rbid] = make(chan struct {
+		rbType := rbMessage.Type
+		if _, in := RbChannel[rbType][rbid]; !in {
+			RbChannel[rbType][rbid] = make(chan struct {
 				RbMessage types.RbMessage
 				From      int
 			})
 		}
 
-		RbChannel[t][rbid] <- struct {
+		RbChannel[rbType][rbid] <- struct {
+			RbMessage types.RbMessage
+			From      int
+		}{RbMessage: *rbMessage, From: message.From}
+
+	case "RB_ABC":
+		rbMessage := new(types.RbMessage)
+		buf := bytes.NewBuffer(message.Payload)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&rbMessage)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		RbAbcChannel <- struct {
 			RbMessage types.RbMessage
 			From      int
 		}{RbMessage: *rbMessage, From: message.From}
@@ -418,6 +436,20 @@ func HandleMessage(msg []byte) {
 			VcMessage types.VcMessage
 			From      int
 		}{VcMessage: *vcMessage, From: message.From}
+
+	case "ABC":
+		abcMessage := new(types.AbcMessage)
+		buf := bytes.NewBuffer(message.Payload)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&abcMessage)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		AbcChannel <- struct {
+			AbcMessage types.AbcMessage
+			From       int
+		}{AbcMessage: *abcMessage, From: message.From}
 	}
 }
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST=TestVConsensus
+TEST=TestABroadcast
 
 N=10
 T=0

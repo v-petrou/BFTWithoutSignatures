@@ -8,8 +8,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
-	"log"
-	"time"
 )
 
 var (
@@ -19,8 +17,6 @@ var (
 
 // VectorConsensus - The method that is called to initiate the VC module
 func VectorConsensus(vcid int, initVal []byte) {
-	start := time.Now()
-
 	// START Variables initialization
 	received := make(map[int][]byte)
 	received[variables.ID] = initVal
@@ -33,6 +29,7 @@ func VectorConsensus(vcid int, initVal []byte) {
 	}
 	// END Variables initialization
 
+	// Reliable Broadcast the given value
 	rbVC(vcid, types.NewVcMessage(vcid, initVal))
 
 	for round := 0; ; round++ {
@@ -66,7 +63,7 @@ func VectorConsensus(vcid int, initVal []byte) {
 			logger.ErrLogger.Fatal(err)
 		}
 
-		logger.OutLogger.Print(vcid, ".VC len-", len(received), "\n\tvector-", vector, " -> MVC\n")
+		logger.OutLogger.Print(vcid, ".VC len-", len(received), "  vector-", vector, " -> MVC\n")
 
 		go MultiValuedConsensus(mvcid, w)
 		v := <-MVCAnswer[mvcid]
@@ -79,10 +76,8 @@ func VectorConsensus(vcid int, initVal []byte) {
 				logger.ErrLogger.Fatal(err)
 			}
 
-			logger.OutLogger.Print(vcid, ".VC  decide-", vect, "\n")
-			log.Println(variables.ID, "|", vcid, ".VC  decide-", vect)
-			log.Println(variables.ID, "|", vcid, ".VC  time-", time.Since(start))
-			// TODO: Put the result in a channel
+			logger.OutLogger.Print(vcid, ".VC decide-", vect, "\n")
+			VCAnswer[vcid] <- vect
 			return
 		}
 	}

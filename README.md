@@ -13,7 +13,13 @@ From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols with
 | [Vector Consensus](#vector-consensus)                                                |
 | [Multi-Valued Consensus](#multi-valued-consensus)                                    |
 | [Binary Consensus](#binary-consensus)  \|  [Reliable Broadcast](#reliable-broadcast) |
-| Reliable Channels                                                                    |
+| [Reliable Channels](#reliable-channels)                                                                   |
+
+### Reliable Channels
+Reliable channels are guaranteed by the ZeroMQ concurrency framework we use, and come with
+two properties when the sender and the recipient of a message are both correct:
+- the message is eventually received
+- the message is not modified in the channel.
 
 ### Binary Consensus
 A binary consensus protocol performs consensus on a binary value b ∈ {0, 1}. The problem
@@ -54,7 +60,15 @@ single value. The decided vector needs to have at least (2f + 1) values and its 
 - Agreement: no two correct processes decide differently.
 - Termination: every correct process eventually decides.
 
-#### Atomic Broadcast
+### Atomic Broadcast
+Atomic Broadcast is the problem of delivering the same messages in the same order to all processes
+and its properties are:
+- Validity: if a correct process broadcasts a message M, then some correct process eventually delivers M.
+- Agreement: if a correct process delivers a message M, then all correct processes eventually deliver M.
+- Integrity: for any ID, every correct process delivers at most one message M with ID, and if sender(M)
+is correct then M was previously broadcast by sender(M).
+- Total order: if two correct processes deliver two messages M1 and M2 then both processes deliver
+the two messages in the same order.
 
 ## Install Golang
 If you have not already installed [Golang](https://golang.org/doc/install) follow the instructions here.
@@ -94,12 +108,13 @@ bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 - [x] Binary Consensus
 - [x] Reliable Broadcast
 - [x] Multi-Valued Consensus
+- [x] Vector Consensus
 
 ## TODO
 - [ ] Threshold Encryption
 - [ ] Common-Coin
-- [ ] Vector Consensus
 - [ ] Atomic Broadcast
+- [ ] Client-Request Handler
 
 ## References
 - [From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols without Signatures](https://www.researchgate.net/publication/220459271_From_Consensus_to_Atomic_Broadcast_Time-Free_Byzantine-Resistant_Protocols_without_Signatures)
