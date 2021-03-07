@@ -114,10 +114,12 @@ func abcTask1() {
 			}
 		}
 
-		// Deliver messages in aDeliver (put them in a channel)
+		// Sort messages in aDeliver and then deliver them
+		// TODO: probably put them in a channel
 		sort.Slice(aDelivered, func(i, j int) bool {
 			return bytes.Compare(aDelivered[i], aDelivered[j]) < 0
 		})
+
 		logger.OutLogger.Print(aid, ".ABC aDelivered-", aDelivered, "\n")
 		log.Print(variables.ID, " | ", aid, ".ABC aDelivered-", aDelivered, "\n")
 
