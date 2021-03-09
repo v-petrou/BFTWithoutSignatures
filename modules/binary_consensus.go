@@ -148,7 +148,6 @@ func BvBroadcast(identifier int, initVal uint) {
 
 		logger.OutLogger.Print(tag, ".BC: bin_values-", binValues[tag], "\n")
 	}
-
 }
 
 func broadcast(tag string, bcMessage types.BcMessage) {

@@ -1,4 +1,15 @@
 # BFTWithoutSignatures
+
+### Contents
+- [About](#about)
+- [Modules](#modules)
+- [Installation](#installation)
+- [Execution](#execution)
+- [Project State](#project-state)
+- [References](#references)
+
+
+## About
 A Golang with ZeroMQ implementation of the algorithm:
 <div style="font-size: 15px">
 From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols without Signatures
@@ -6,6 +17,7 @@ From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols with
 <div style="font-size: 13px">
     By Miguel Correia, Nuno Ferreira Neves, Paulo Verissimo
 </div>
+
 
 ## Modules
 | [Atomic Broadcast](#atomic-broadcast)                                                |
@@ -20,7 +32,6 @@ Reliable channels are guaranteed by the ZeroMQ concurrency framework we use, and
 two properties when the sender and the recipient of a message are both correct:
 - the message is eventually received
 - the message is not modified in the channel.
-
 ### Binary Consensus
 A binary consensus protocol performs consensus on a binary value b ∈ {0, 1}. The problem
 can be formally defined in terms of three properties:
@@ -28,7 +39,6 @@ can be formally defined in terms of three properties:
 that decides, decides b.
 - Agreement: no two correct processes decide differently.
 - Termination: every correct process eventually decides.
-
 ### Reliable Broadcast
 A reliable broadcast protocol ensures that all correct processes deliver the same messages,
 and that messages broadcast by correct processes are delivered. It can be defined in terms
@@ -39,7 +49,6 @@ eventually delivers M.
 eventually deliver M.
 - Integrity: every correct process p delivers at most one message M, and if sender(M) is
 correct then M was previously broadcast by sender(M).
-
 ### Multi-Valued Consensus
 A multi-valued consensus protocol make an agreement on values with an arbitrary size. The definition
 properties are:
@@ -50,7 +59,6 @@ decides, decides v.
 decides, decides v.
 - Agreement: two correct processes can not decide differently.
 - Termination: every correct process eventually decides.
-
 ### Vector Consensus
 Vector Consensus makes agreement on a vector with a subset of the values proposed, instead of a
 single value. The decided vector needs to have at least (2f + 1) values and its properties are:
@@ -59,7 +67,6 @@ single value. The decided vector needs to have at least (2f + 1) values and its 
     * at least (f +1) elements of V were proposed by correct processes.
 - Agreement: no two correct processes decide differently.
 - Termination: every correct process eventually decides.
-
 ### Atomic Broadcast
 Atomic Broadcast is the problem of delivering the same messages in the same order to all processes
 and its properties are:
@@ -70,16 +77,20 @@ is correct then M was previously broadcast by sender(M).
 - Total order: if two correct processes deliver two messages M1 and M2 then both processes deliver
 the two messages in the same order.
 
-## Install Golang
-If you have not already installed [Golang](https://golang.org/doc/install) follow the instructions here.
 
-## Clone Repository
+## Installation
+### Golang
+If you have not already installed [Golang](https://golang.org/doc/install) follow the instructions here.
+### Clone Repository
 ```bash
 cd ~/go/src/
 git clone https://github.com/v-petrou/BFTWithoutSignatures.git
 ```
 
-## Run
+
+## Execution
+### BFTWithoutSignatures_Client
+You can find the client instructions [here](https://github.com/v-petrou/BFTWithoutSignatures_Client).
 ### Manually
 To install the program and generate the keys run:
 ```bash
@@ -90,7 +101,6 @@ Open <N> different terminals. In each terminal run:
 ```bash
 BFTWithoutSignatures <ID> <N> <t> <Clients> <Scenario>
 ```
-
 ### Script
 Adjust the script (BFTWithoutSignatures/scripts/run.sh) and run:
 ```bash
@@ -101,7 +111,9 @@ When you are done and want to kill the processes run:
 bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 ```
 
-## Current Project State
+
+## Project State
+### Current Project State
 - [x] Messenger
 - [x] Trusted Dealer
 - [x] Binary-Value Broadcast
@@ -109,12 +121,12 @@ bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 - [x] Reliable Broadcast
 - [x] Multi-Valued Consensus
 - [x] Vector Consensus
-
-## TODO
+### TODO
 - [ ] Threshold Encryption
 - [ ] Common-Coin
 - [ ] Atomic Broadcast
 - [ ] Client-Request Handler
+
 
 ## References
 - [From Consensus to Atomic Broadcast: Time-Free Byzantine-Resistant Protocols without Signatures](https://www.researchgate.net/publication/220459271_From_Consensus_to_Atomic_Broadcast_Time-Free_Byzantine-Resistant_Protocols_without_Signatures)

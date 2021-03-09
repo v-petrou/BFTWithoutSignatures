@@ -4,6 +4,7 @@ import (
 	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
 	"BFTWithoutSignatures/messenger"
+	"BFTWithoutSignatures/modules"
 	"BFTWithoutSignatures/threshenc"
 	"BFTWithoutSignatures/variables"
 	"log"
@@ -35,6 +36,7 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 	messenger.InitializeMessenger()
 	messenger.Subscribe()
 	go messenger.TransmitMessages()
+	modules.RequestHandler()
 
 	cleanup()
 }
@@ -87,6 +89,6 @@ func main() {
 		_ = <-done
 
 	} else {
-		log.Fatal("Arguments should be '<id> <n> <f> <k> <scenario>")
+		log.Fatal("Arguments should be '<id> <n> <t> <clients> <scenario>")
 	}
 }

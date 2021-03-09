@@ -27,12 +27,12 @@ func InitializeLocal() {
 	ResponseAddresses = make(map[int]string, variables.Clients)
 
 	for i := 0; i < variables.N; i++ {
-		RepAddresses[i] = "tcp://*:" + strconv.Itoa(4000+variables.ID*100+i)
-		ReqAddresses[i] = "tcp://localhost:" + strconv.Itoa(4000+i*100+variables.ID)
+		RepAddresses[i] = "tcp://*:" + strconv.Itoa(4000+(variables.ID*100)+i)
+		ReqAddresses[i] = "tcp://localhost:" + strconv.Itoa(4000+(i*100)+variables.ID)
 	}
 	for i := 0; i < variables.Clients; i++ {
-		ServerAddresses[i] = "tcp://*:" + strconv.Itoa(7000+variables.ID*100+i)
-		ResponseAddresses[i] = "tcp://*:" + strconv.Itoa(10000+variables.ID*100+i)
+		ServerAddresses[i] = "tcp://*:" + strconv.Itoa(7000+(variables.ID*100)+i)
+		ResponseAddresses[i] = "tcp://*:" + strconv.Itoa(10000+(variables.ID*100)+i)
 	}
 }
 

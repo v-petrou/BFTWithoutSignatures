@@ -81,10 +81,10 @@ var (
 	})
 
 	// RequestChannel - Channel to put the client requests in
-	RequestChannel = make(chan *types.ClientMessage, 100)
+	RequestChannel = make(chan types.ClientMessage, 100)
 )
 
-// InitializeMessenger - Initializes the 0MQ sockets ( between Servers and Clients)
+// InitializeMessenger - Initializes the 0MQ sockets (between Servers and Clients)
 func InitializeMessenger() {
 	Context, err := zmq4.NewContext()
 	if err != nil {
@@ -158,7 +158,7 @@ func InitializeMessenger() {
 		}
 		logger.OutLogger.Println("Requests from Client", i, "on", serverAddr)
 
-		// ResponseSockets initialization to publish the response back to the clients.
+		// ResponseSockets initialization to publish the response back to the clients
 		ResponseSockets[i], err = Context.NewSocket(zmq4.PUB)
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
@@ -270,7 +270,7 @@ func Subscribe() {
 					logger.ErrLogger.Fatal(err)
 				}
 
-				handleRequest(message)
+				go handleRequest(message, i)
 
 				_, err = ServerSockets[i].Send("", 0)
 				if err != nil {
@@ -282,16 +282,16 @@ func Subscribe() {
 }
 
 // Put client's message in RequestChannel to be handled
-func handleRequest(msg []byte) {
-	message := new(types.ClientMessage)
+func handleRequest(msg []byte, from int) {
+	var message rune
 	buffer := bytes.NewBuffer(msg)
 	decoder := gob.NewDecoder(buffer)
 	err := decoder.Decode(&message)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	logger.OutLogger.Println("REQ received from client")
-	RequestChannel <- message
+	logger.OutLogger.Println("RECEIVED REQ from", from)
+	RequestChannel <- types.NewClientMessage(from, message)
 }
 
 // HandleMessage - Handles the messages from the other servers
@@ -454,7 +454,7 @@ func HandleMessage(msg []byte) {
 }
 
 // ReplyClient - Sends back a response to the client
-func ReplyClient(reply *types.Reply) {
+func ReplyClient(reply []byte, to int) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(reply)
@@ -462,18 +462,9 @@ func ReplyClient(reply *types.Reply) {
 		logger.ErrLogger.Fatal(err)
 	}
 
-	message := types.NewMessage(w.Bytes(), "Reply")
-	buf := new(bytes.Buffer)
-	enc := gob.NewEncoder(buf)
-	err = enc.Encode(message)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
-
-	to := reply.Client
 	_, err = ResponseSockets[to].SendBytes(w.Bytes(), 0)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	logger.OutLogger.Println("Replied to Client", to, "(", string(reply.Result), ")")
+	logger.OutLogger.Println("Replied to Client", to, "(", string(reply), ")")
 }
