@@ -90,14 +90,14 @@ git clone https://github.com/v-petrou/BFTWithoutSignatures.git
 
 ## Execution
 ### BFTWithoutSignatures_Client
-You can find the client instructions [here](https://github.com/v-petrou/BFTWithoutSignatures_Client).
+You can find the instructions for the BFT client [here](https://github.com/v-petrou/BFTWithoutSignatures_Client).
 ### Manually
 To install the program and generate the keys run:
 ```bash
 go install BFTWithoutSignatures
 BFTWithoutSignatures generate_keys <N>      // For key generation
 ```
-Open <N> different terminals. In each terminal run:
+Open <N> different terminals and in each terminal run:
 ```bash
 BFTWithoutSignatures <ID> <N> <t> <Clients> <Scenario>
 ```

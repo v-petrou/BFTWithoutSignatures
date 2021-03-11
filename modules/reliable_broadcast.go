@@ -26,11 +26,6 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 		accepted[i] = false
 	}
 
-	initial[variables.ID] = initVal
-	echo[variables.ID][variables.ID] = initVal
-	ready[variables.ID][variables.ID] = initVal
-	accepted[variables.ID] = true
-
 	if _, in := messenger.RbChannel[mType][rbid]; !in {
 		messenger.RbChannel[mType][rbid] = make(chan struct {
 			RbMessage types.RbMessage
@@ -42,7 +37,12 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 	// Step 0
 	sendToAll(types.NewRbMessage(rbid, "INIT", mType, variables.ID, initVal))
 	sendToAll(types.NewRbMessage(rbid, "ECHO", mType, variables.ID, initVal))
+
+	initial[variables.ID] = initVal
+	echo[variables.ID][variables.ID] = initVal
 	sentEcho[variables.ID] = true
+	ready[variables.ID][variables.ID] = initVal
+	accepted[variables.ID] = true
 
 	logger.OutLogger.Print(rbid, ".RB-", mType, ": INIT ", variables.ID, "\n")
 	logger.OutLogger.Print(rbid, ".RB-", mType, ": INIT->ECHO ", variables.ID, "\n")
@@ -55,7 +55,9 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 				continue // Only one value can be received from each process
 			}
 			initial[instance] = message.RbMessage.Value
-			sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, initial[message.From]))
+			sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, initial[instance]))
+
+			echo[instance][variables.ID] = initial[instance]
 			sentEcho[instance] = true
 			logger.OutLogger.Print(rbid, ".RB-", mType, ": INIT->ECHO ", instance, "\n")
 
@@ -69,11 +71,15 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 			for k, v := range counter {
 				if v >= ((variables.N+variables.F)/2) && !sentEcho[instance] { // Step 1
 					sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, dict[k]))
+
+					echo[instance][variables.ID] = dict[k]
 					sentEcho[instance] = true
 					logger.OutLogger.Print(rbid, ".RB-", mType, ": ECHO->ECHO ", instance, "\n")
 
 				} else if v >= ((variables.N+variables.F)/2) && !sentReady[instance] { // Step 2
 					sendToAll(types.NewRbMessage(rbid, "READY", mType, instance, dict[k]))
+
+					ready[instance][variables.ID] = dict[k]
 					sentReady[instance] = true
 					logger.OutLogger.Print(rbid, ".RB-", mType, ": ECHO->READY ", instance, "\n")
 				}
@@ -90,15 +96,19 @@ func ReliableBroadcast(rbid int, mType string, initVal []byte) {
 				if v >= ((2*variables.F)+1) && !accepted[instance] { // Step 3 - Accept v
 					go messenger.HandleMessage(dict[k])
 					accepted[instance] = true
-					logger.OutLogger.Print(rbid, ".RB accept-", instance, "\n")
+					logger.OutLogger.Print(rbid, ".RB-", mType, ": accept-", instance, "\n")
 
 				} else if v >= (variables.F+1) && !sentEcho[instance] { // Step 1
 					sendToAll(types.NewRbMessage(rbid, "ECHO", mType, instance, dict[k]))
+
+					echo[instance][variables.ID] = dict[k]
 					sentEcho[instance] = true
 					logger.OutLogger.Print(rbid, ".RB-", mType, ": READY->ECHO ", instance, "\n")
 
 				} else if v >= (variables.F+1) && !sentReady[instance] { // Step 2
 					sendToAll(types.NewRbMessage(rbid, "READY", mType, instance, dict[k]))
+
+					ready[instance][variables.ID] = dict[k]
 					sentReady[instance] = true
 					logger.OutLogger.Print(rbid, ".RB-", mType, ": READY->READY ", instance, "\n")
 				}

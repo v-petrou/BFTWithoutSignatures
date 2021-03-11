@@ -11,7 +11,6 @@ import (
 	"log"
 	"sort"
 	"sync"
-	"time"
 )
 
 var (
@@ -56,8 +55,6 @@ func AtomicBroadcast(m []byte) {
 }
 
 func abcTask1() {
-	start := time.Now()
-
 	for {
 		for { // Wait until not empty R_delivered
 			delMutex.Lock()
@@ -137,7 +134,6 @@ func abcTask1() {
 		}
 
 		logger.OutLogger.Print(aid, ".ABC len-", len(rDelivered), " -> aid++\n")
-		log.Println(variables.ID, "|", aid, ".ABC time-", time.Since(start))
 		aid++
 	}
 }
