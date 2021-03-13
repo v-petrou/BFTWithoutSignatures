@@ -69,7 +69,7 @@ func VectorConsensus(vcid int, initVal []byte) {
 		v := <-MVCAnswer[mvcid]
 
 		// If MVC answer != DEFAULT, then decide this value, else go to next the round
-		if bytes.Compare(v, variables.DEFAULT) != 0 {
+		if !bytes.Equal(v, variables.DEFAULT) {
 			var vect map[int][]byte
 			err = json.Unmarshal(v, &vect)
 			if err != nil {

@@ -2,7 +2,7 @@
 
 N=10
 T=0
-CLIENTS=1
+CLIENTS=2
 SCEN=0
 
 go install BFTWithoutSignatures

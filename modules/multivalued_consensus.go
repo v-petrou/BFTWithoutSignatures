@@ -142,19 +142,17 @@ func rbMVC(id int, mvcMessage types.MvcMessage) {
 
 func checkVectValidity(message types.MvcMessage, init map[int][]byte) bool {
 	for key, val := range message.Vector {
-		if bytes.Compare(val, variables.DEFAULT) == 0 {
+		if bytes.Equal(val, variables.DEFAULT) {
 			continue
 		}
-		if bytes.Compare(init[key], val) != 0 {
+		if !bytes.Equal(init[key], val) {
 			return false
 		}
 	}
 
 	val := calculateW(message.Vector)
-	if bytes.Compare(val, message.Value) != 0 {
-		return false
-	}
-	return true
+
+	return bytes.Equal(val, message.Value)
 }
 
 func fillVector(array map[int][]byte) map[int][]byte {
@@ -206,12 +204,12 @@ func findOccurrences(vector map[int][]byte) (map[int]int, map[int][]byte) {
 	counter := make(map[int]int)
 	dict := make(map[int][]byte)
 	for _, val := range vector {
-		if bytes.Compare(val, variables.DEFAULT) == 0 {
+		if bytes.Equal(val, variables.DEFAULT) {
 			continue
 		}
 		key := len(dict)
 		for k, v := range dict {
-			if bytes.Compare(v, val) == 0 {
+			if bytes.Equal(v, val) {
 				key = k
 				break
 			}

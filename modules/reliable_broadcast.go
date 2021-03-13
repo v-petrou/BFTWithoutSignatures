@@ -136,7 +136,7 @@ func CountMessages(vector map[int][]byte) (map[int]int, map[int][]byte) {
 	for _, val := range vector {
 		key := len(dict)
 		for k, v := range dict {
-			if bytes.Compare(v, val) == 0 {
+			if bytes.Equal(v, val) {
 				key = k
 				break
 			}

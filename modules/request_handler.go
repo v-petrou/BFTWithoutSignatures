@@ -1,36 +1,29 @@
 package modules
 
 import (
-	"BFTWithoutSignatures/logger"
 	"BFTWithoutSignatures/messenger"
-	"BFTWithoutSignatures/variables"
-	"log"
-	"time"
+	"BFTWithoutSignatures/types"
 )
 
 var (
 	// Delivered - Channel to receive delivered messages from ABC
-	Delivered = make(chan [][]byte)
+	Delivered = make(chan types.Reply)
 )
 
 // RequestHandler - The module that handles requests received from clients and replies to them
 func RequestHandler() {
-	start := time.Now()
-
 	go func() {
 		for message := range messenger.RequestChannel {
-			messenger.ReplyClient([]byte("ACK"), message.Client)
-			//AtomicBroadcast([]byte(string(message.Value)))
-
-			log.Println(variables.ID, "|", "time-", time.Since(start))
+			AtomicBroadcast([]byte(string(message.Value)))
 		}
 	}()
 
 	go func() {
 		for message := range Delivered {
-			for _, v := range message {
-				logger.OutLogger.Println(v)
-			}
+			messenger.BroadcastClients(message)
 		}
 	}()
 }
+
+// start := time.Now()
+// log.Println(variables.ID, "|", "time-", time.Since(start))

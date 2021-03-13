@@ -36,6 +36,8 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 	messenger.InitializeMessenger()
 	messenger.Subscribe()
 	go messenger.TransmitMessages()
+
+	modules.InitiateAtomicBroadcast()
 	modules.RequestHandler()
 
 	cleanup()

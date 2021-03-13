@@ -2,7 +2,6 @@ package types
 
 import (
 	"BFTWithoutSignatures/logger"
-	"BFTWithoutSignatures/variables"
 	"bytes"
 	"encoding/gob"
 	"time"
@@ -65,30 +64,4 @@ func (cm *ClientMessage) GobDecode(buf []byte) error {
 		logger.ErrLogger.Fatal(err)
 	}
 	return nil
-}
-
-// Equals - Checks if client messages are equal
-func (cm *ClientMessage) Equals(cmsg *ClientMessage) bool {
-	return (cm.Client == cmsg.Client) && (cm.Value == cmsg.Value) &&
-		(cm.TimeStamp.Equal(cmsg.TimeStamp)) && (cm.Ack == cmsg.Ack)
-}
-
-// ------------------------------------------------------------------------------------ //
-
-// Reply struct
-type Reply struct {
-	TimeStamp time.Time
-	Client    int
-	ID        int
-	Result    string
-}
-
-// NewReplyMessage - Creates a new Client message
-func NewReplyMessage(client int, value rune) Reply {
-	return Reply{TimeStamp: time.Now(), Client: client, ID: variables.ID, Result: string(value)}
-}
-
-// Equals - Checks if replies are equal
-func (rep *Reply) Equals(reply *Reply) bool {
-	return (rep.Client == reply.Client) && (rep.ID == reply.ID) && (rep.Result == reply.Result)
 }

@@ -253,7 +253,7 @@ func Subscribe() {
 
 				go HandleMessage(message)
 
-				_, err = ReceiveSockets[i].Send("OK.", 0)
+				_, err = ReceiveSockets[i].Send("", 0)
 				if err != nil {
 					logger.ErrLogger.Fatal(err)
 				}
@@ -453,8 +453,15 @@ func HandleMessage(msg []byte) {
 	}
 }
 
+// Broadcast - Broadcasts a message to all other servers
+func BroadcastClients(message types.Reply) {
+	for i := 0; i < variables.Clients; i++ {
+		ReplyClient(message, i)
+	}
+}
+
 // ReplyClient - Sends back a response to the client
-func ReplyClient(reply []byte, to int) {
+func ReplyClient(reply types.Reply, to int) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(reply)
@@ -466,5 +473,5 @@ func ReplyClient(reply []byte, to int) {
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	logger.OutLogger.Println("Replied to Client", to, "(", string(reply), ")")
+	logger.OutLogger.Println("Replied to Client", to, "-", reply.Value)
 }

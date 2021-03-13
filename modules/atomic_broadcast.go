@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"crypto/sha512"
 	"encoding/gob"
-	"log"
 	"sort"
 	"sync"
 )
@@ -113,19 +112,17 @@ func abcTask1() {
 		}
 
 		// Sort messages in aDeliver and then deliver them
-		// TODO: probably put them in a channel
 		sort.Slice(aDelivered, func(i, j int) bool {
 			return bytes.Compare(aDelivered[i], aDelivered[j]) < 0
 		})
-
+		Delivered <- types.NewReplyMessage(aid, 1, aDelivered)
 		logger.OutLogger.Print(aid, ".ABC aDelivered-", aDelivered, "\n")
-		log.Print(variables.ID, " | ", aid, ".ABC aDelivered-", aDelivered, "\n")
 
 		// Remove from R_delivered the values that have been already delivered
 		for _, b := range aDelivered {
 			delMutex.Lock()
 			for i, v := range rDelivered {
-				if bytes.Compare(b, v) == 0 {
+				if bytes.Equal(b, v) {
 					rDelivered = append(rDelivered[:i], rDelivered[i+1:]...)
 					break
 				}
@@ -188,7 +185,7 @@ func countHashes(vector map[int][][]byte) (map[int]int, map[int][]byte) {
 		for _, x := range val {
 			key := len(dict)
 			for k, v := range dict {
-				if bytes.Compare(v, x) == 0 {
+				if bytes.Equal(v, x) {
 					key = k
 					break
 				}
@@ -205,7 +202,7 @@ func checkIfDelivered(rDelivered [][]byte, val []byte) ([]byte, bool) {
 	for _, v := range rDelivered {
 		hasher := sha512.New()
 		hasher.Write(v)
-		if bytes.Compare(hasher.Sum(nil), val) == 0 {
+		if bytes.Equal(hasher.Sum(nil), val) {
 			return v, true
 		}
 	}
