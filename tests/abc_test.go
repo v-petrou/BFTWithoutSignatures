@@ -63,6 +63,11 @@ func TestABroadcast(t *testing.T) {
 func initializeForTestAbc(id int, n int, t int, clients int, scenario config.Scenario) {
 	variables.Initialize(id, n, t, clients)
 
+	// if variables.ID == 0 || variables.ID == 1 || variables.ID == 3 {
+	// 	for {
+	// 	}
+	// }
+
 	if variables.Remote {
 		config.InitializeIP()
 	} else {
@@ -80,7 +85,7 @@ func initializeForTestAbc(id int, n int, t int, clients int, scenario config.Sce
 
 	messenger.InitializeMessenger()
 	messenger.Subscribe()
-	go messenger.TransmitMessages()
+	messenger.TransmitMessages()
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt)

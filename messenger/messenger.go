@@ -8,6 +8,7 @@ import (
 	"BFTWithoutSignatures/variables"
 	"bytes"
 	"encoding/gob"
+	"time"
 
 	"github.com/pebbe/zmq4"
 )
@@ -33,10 +34,7 @@ var (
 // Channels for messages
 var (
 	// MessageChannel - Channel to put the messages that need to be transmitted in
-	MessageChannel = make(chan struct {
-		Message types.Message
-		To      int
-	})
+	MessageChannel = make(map[int]chan types.Message)
 
 	// BvbChannel - Channel to put the BVB messages in
 	BvbChannel = make(map[int]chan struct {
@@ -132,6 +130,9 @@ func InitializeMessenger() {
 			logger.ErrLogger.Fatal(err)
 		}
 		logger.OutLogger.Println("Send to Server", i, "on", sendAddr)
+
+		// Init message channel
+		MessageChannel[i] = make(chan types.Message)
 	}
 
 	logger.OutLogger.Println("-----------------------------------------")
@@ -200,44 +201,46 @@ func Broadcast(message types.Message) {
 		if i == variables.ID {
 			continue // Not myself
 		}
-		SendMessage(message, i)
+
+		t := time.NewTicker(150 * time.Millisecond)
+		select {
+		case MessageChannel[i] <- message:
+		case <-t.C:
+		}
 	}
 }
 
-// SendMessage - Puts the messages in the message channel to be transmitted
-func SendMessage(message types.Message, to int) {
-	MessageChannel <- struct {
-		Message types.Message
-		To      int
-	}{Message: message, To: to}
-}
-
-// TransmitMessages - Transmits the messages to the other servers [go started from main]
+// TransmitMessages - Transmits the messages to the other servers [started from main]
 func TransmitMessages() {
-	for messageTo := range MessageChannel {
-		to := messageTo.To
-		message := messageTo.Message
-		w := new(bytes.Buffer)
-		encoder := gob.NewEncoder(w)
-		err := encoder.Encode(message)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
+	for i := 0; i < variables.N; i++ {
+		if i == variables.ID {
+			continue // Not myself
 		}
+		go func(i int) { // Initializes them with a goroutine and waits forever
+			for message := range MessageChannel[i] {
+				w := new(bytes.Buffer)
+				encoder := gob.NewEncoder(w)
+				err := encoder.Encode(message)
+				if err != nil {
+					logger.ErrLogger.Fatal(err)
+				}
 
-		_, err = SendSockets[to].SendBytes(w.Bytes(), 0)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
+				_, err = SendSockets[i].SendBytes(w.Bytes(), 0)
+				if err != nil {
+					logger.ErrLogger.Fatal(err)
+				}
 
-		_, err = SendSockets[to].Recv(0)
-		if err != nil {
-			logger.ErrLogger.Fatal(err)
-		}
-		logger.OutLogger.Println("SENT", messageTo.Message.Type, "to", to)
+				_, err = SendSockets[i].Recv(0)
+				if err != nil {
+					logger.ErrLogger.Fatal(err)
+				}
+				logger.OutLogger.Println("SENT", message.Type, "to", i)
+			}
+		}(i)
 	}
 }
 
-// Subscribe - Handles the inputs from both clients and other servers
+// Subscribe - Handles the inputs from both clients and other servers [started from main]
 func Subscribe() {
 	// Gets messages from other servers and handles them
 	for i := 0; i < variables.N; i++ {

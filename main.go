@@ -35,7 +35,7 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 
 	messenger.InitializeMessenger()
 	messenger.Subscribe()
-	go messenger.TransmitMessages()
+	messenger.TransmitMessages()
 
 	modules.InitiateAtomicBroadcast()
 	modules.RequestHandler()
@@ -88,7 +88,7 @@ func main() {
 
 		// To keep the server running
 		done := make(chan interface{})
-		_ = <-done
+		<-done
 
 	} else {
 		log.Fatal("Arguments should be '<id> <n> <t> <clients> <scenario>")

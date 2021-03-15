@@ -89,8 +89,8 @@ git clone https://github.com/v-petrou/BFTWithoutSignatures.git
 
 
 ## Execution
-### BFTWithoutSignatures_Client
-You can find the instructions for the BFT client [here](https://github.com/v-petrou/BFTWithoutSignatures_Client).
+### BFTWithoutSignatures Client
+You can find the instructions for our BFT client [here](https://github.com/v-petrou/BFTWithoutSignatures_Client).
 ### Manually
 To install the program and generate the keys run:
 ```bash
@@ -121,10 +121,10 @@ bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 - [x] Reliable Broadcast
 - [x] Multi-Valued Consensus
 - [x] Vector Consensus
+- [x] Atomic Broadcast
 ### TODO
 - [ ] Threshold Encryption
 - [ ] Common-Coin
-- [ ] Atomic Broadcast
 - [ ] Client-Request Handler
 
 
