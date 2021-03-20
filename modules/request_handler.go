@@ -47,11 +47,8 @@ func RequestHandler() {
 				go messenger.ReplyClient(types.NewReplyMessage(m.Num), m.Cid)
 			}
 
-			logger.OutLogger.Print(message.Id, ".REQH: array-", Array, "\n")
-			log.Print(variables.ID, " | ", message.Id, ".REQH: array-", Array, "\n")
+			logger.OutLogger.Printf("%d.REQH: array-%c\n", message.Id, Array)
+			log.Printf("%d | %d.REQH: array-%c\n", variables.ID, message.Id, Array)
 		}
 	}()
 }
-
-// start := time.Now()
-// log.Println(variables.ID, "|", "time-", time.Since(start))
