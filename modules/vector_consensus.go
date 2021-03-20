@@ -63,7 +63,7 @@ func VectorConsensus(vcid int, initVal []byte) {
 			logger.ErrLogger.Fatal(err)
 		}
 
-		logger.OutLogger.Print(vcid, ".VC len-", len(received), "  vector-", vector, " -> MVC\n")
+		logger.OutLogger.Print(vcid, ".VC: len-", len(received), " vector-", vector, " --> MVC\n")
 
 		go MultiValuedConsensus(mvcid, w)
 		v := <-MVCAnswer[mvcid]
@@ -76,7 +76,7 @@ func VectorConsensus(vcid int, initVal []byte) {
 				logger.ErrLogger.Fatal(err)
 			}
 
-			logger.OutLogger.Print(vcid, ".VC decide-", vect, "\n")
+			logger.OutLogger.Print(vcid, ".VC: decide-", vect, "\n")
 			VCAnswer[vcid] <- vect
 			return
 		}

@@ -9,30 +9,20 @@ import (
 
 // Reply struct
 type Reply struct {
-	Id    int
 	From  int
-	To    int
-	Value [][]byte
+	Value int
 }
 
 // NewReplyMessage - Creates a new Reply
-func NewReplyMessage(id int, to int, value [][]byte) Reply {
-	return Reply{Id: id, From: variables.ID, To: to, Value: value}
+func NewReplyMessage(value int) Reply {
+	return Reply{From: variables.ID, Value: value}
 }
 
 // GobEncode - Reply message encoder
 func (r Reply) GobEncode() ([]byte, error) {
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
-	err := encoder.Encode(r.Id)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
-	err = encoder.Encode(r.From)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
-	err = encoder.Encode(r.To)
+	err := encoder.Encode(r.From)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
@@ -47,15 +37,7 @@ func (r Reply) GobEncode() ([]byte, error) {
 func (r *Reply) GobDecode(buf []byte) error {
 	d := bytes.NewBuffer(buf)
 	decoder := gob.NewDecoder(d)
-	err := decoder.Decode(&r.Id)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
-	err = decoder.Decode(&r.From)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
-	err = decoder.Decode(&r.To)
+	err := decoder.Decode(&r.From)
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}

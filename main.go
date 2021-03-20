@@ -12,11 +12,13 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 )
 
 // Initializer - Method that initializes all required processes
-func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
-	variables.Initialize(id, n, t, clients)
+func initializer(id int, n int, clients int, scenario int, rem int) {
+	variables.Initialize(id, n, clients, rem)
+	logger.InitializeLogger("./logs/out/", "./logs/error/")
 
 	if variables.Remote {
 		config.InitializeIP()
@@ -25,10 +27,9 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 	}
 	config.InitializeScenario(scenario)
 
-	logger.InitializeLogger("./logs/out/", "./logs/error/")
 	logger.OutLogger.Print(
-		"ID:", variables.ID, " | N:", variables.N, " | F:", variables.F,
-		" | T:", variables.T, " | Clients:", variables.Clients, "\n\n",
+		"ID:", variables.ID, " | N:", variables.N, " | F:", variables.F, " | Clients:",
+		variables.Clients, " | Scenario:", config.Scenario, " | Remote:", variables.Remote, "\n\n",
 	)
 
 	threshenc.ReadKeys("./keys/")
@@ -38,6 +39,7 @@ func initializer(id int, n int, t int, clients int, scenario config.Scenario) {
 	messenger.TransmitMessages()
 
 	modules.InitiateAtomicBroadcast()
+	time.Sleep(2 * time.Second) // Wait 2s before start accepting requests to initiate all maps
 	modules.RequestHandler()
 
 	cleanup()
@@ -79,18 +81,16 @@ func main() {
 	} else if len(args) == 5 {
 		id, _ := strconv.Atoi(args[0])
 		n, _ := strconv.Atoi(args[1])
-		t, _ := strconv.Atoi(args[2])
-		clients, _ := strconv.Atoi(args[3])
-		tmp, _ := strconv.Atoi(args[4])
-		scenario := config.Scenario(tmp)
+		clients, _ := strconv.Atoi(args[2])
+		scenario, _ := strconv.Atoi(args[3])
+		remote, _ := strconv.Atoi(args[4])
 
-		initializer(id, n, t, clients, scenario)
+		initializer(id, n, clients, scenario, remote)
 
-		// To keep the server running
-		done := make(chan interface{})
+		done := make(chan interface{}) // To keep the server running
 		<-done
 
 	} else {
-		log.Fatal("Arguments should be '<id> <n> <t> <clients> <scenario>")
+		log.Fatal("Arguments should be '<id> <n> <clients> <scenario> <remote>'")
 	}
 }

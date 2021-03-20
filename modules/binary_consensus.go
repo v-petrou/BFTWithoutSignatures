@@ -144,9 +144,9 @@ func BvBroadcast(identifier int, initVal uint) {
 			mutex.Lock()
 			binValues[tag] = append(binValues[tag], val)
 			mutex.Unlock()
-		}
 
-		logger.OutLogger.Print(tag, ".BC: bin_values-", binValues[tag], "\n")
+			logger.OutLogger.Print(tag, ".BC: bin_values-", binValues[tag], "\n")
+		}
 	}
 }
 
@@ -166,7 +166,7 @@ func broadcast(tag string, bcMessage types.BcMessage) {
 	} else {
 		logger.ErrLogger.Fatal("Wrong message type in Binary Consensus Broadcast")
 	}
-	messenger.Broadcast(message)
+	go messenger.Broadcast(message)
 }
 
 // TODO: implement a more Byzantine Tolerant Common-Coin algorithm

@@ -99,7 +99,7 @@ BFTWithoutSignatures generate_keys <N>      // For key generation
 ```
 Open <N> different terminals and in each terminal run:
 ```bash
-BFTWithoutSignatures <ID> <N> <t> <Clients> <Scenario>
+BFTWithoutSignatures <ID> <N> <Clients> <Scenario> <Remote>
 ```
 ### Script
 Adjust the script (BFTWithoutSignatures/scripts/run.sh) and run:
@@ -116,6 +116,7 @@ bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 ### Current Project State
 - [x] Messenger
 - [x] Trusted Dealer
+- [x] Threshold Encryption
 - [x] Binary-Value Broadcast
 - [x] Binary Consensus
 - [x] Reliable Broadcast
@@ -123,7 +124,6 @@ bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 - [x] Vector Consensus
 - [x] Atomic Broadcast
 ### TODO
-- [ ] Threshold Encryption
 - [ ] Common-Coin
 - [ ] Client-Request Handler
 

@@ -27,11 +27,8 @@ var (
 func InitiateAtomicBroadcast() {
 	aid = 0
 	num = 0
-	received = make(map[int]map[int][]byte, (variables.N - 1))
+	received = make(map[int]map[int][]byte, variables.N)
 	for i := 0; i < variables.N; i++ {
-		if i == variables.ID {
-			continue // Not myself
-		}
 		received[i] = make(map[int][]byte)
 	}
 	rDelivered = make([][]byte, 0)
@@ -75,7 +72,7 @@ func abcTask1() {
 		if err != nil {
 			logger.ErrLogger.Fatal(err)
 		}
-		logger.OutLogger.Print(aid, ".ABC hash-", h, " -> VC\n")
+		logger.OutLogger.Print(aid, ".ABC: hash-", h, " --> VC\n")
 
 		// Call VC and retrieve the answer
 		go VectorConsensus(aid, w.Bytes())
@@ -115,8 +112,10 @@ func abcTask1() {
 		sort.Slice(aDelivered, func(i, j int) bool {
 			return bytes.Compare(aDelivered[i], aDelivered[j]) < 0
 		})
-		Delivered <- types.NewReplyMessage(aid, 1, aDelivered)
-		logger.OutLogger.Print(aid, ".ABC aDelivered-", aDelivered, "\n")
+		Delivered <- struct {
+			Id    int
+			Value [][]byte
+		}{Id: aid, Value: aDelivered}
 
 		// Remove from R_delivered the values that have been already delivered
 		for _, b := range aDelivered {
@@ -130,7 +129,8 @@ func abcTask1() {
 			delMutex.Unlock()
 		}
 
-		logger.OutLogger.Print(aid, ".ABC len-", len(rDelivered), " -> aid++\n")
+		logger.OutLogger.Print(aid, ".ABC: aDelivered-", aDelivered, "\n")
+		logger.OutLogger.Print(aid, ".ABC: len-", len(rDelivered), " --> aid++\n")
 		aid++
 	}
 }

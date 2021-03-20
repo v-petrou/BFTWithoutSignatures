@@ -79,7 +79,7 @@ var (
 	})
 
 	// RequestChannel - Channel to put the client requests in
-	RequestChannel = make(chan types.ClientMessage, 100)
+	RequestChannel = make(chan []byte, 100)
 )
 
 // InitializeMessenger - Initializes the 0MQ sockets (between Servers and Clients)
@@ -202,10 +202,14 @@ func Broadcast(message types.Message) {
 			continue // Not myself
 		}
 
-		t := time.NewTicker(150 * time.Millisecond)
-		select {
-		case MessageChannel[i] <- message:
-		case <-t.C:
+		if config.Scenario == "NORMAL" {
+			MessageChannel[i] <- message
+		} else {
+			timeout := time.NewTicker(500 * time.Millisecond)
+			select {
+			case MessageChannel[i] <- message:
+			case <-timeout.C:
+			}
 		}
 	}
 }
@@ -285,16 +289,9 @@ func Subscribe() {
 }
 
 // Put client's message in RequestChannel to be handled
-func handleRequest(msg []byte, from int) {
-	var message rune
-	buffer := bytes.NewBuffer(msg)
-	decoder := gob.NewDecoder(buffer)
-	err := decoder.Decode(&message)
-	if err != nil {
-		logger.ErrLogger.Fatal(err)
-	}
+func handleRequest(message []byte, from int) {
 	logger.OutLogger.Println("RECEIVED REQ from", from)
-	RequestChannel <- types.NewClientMessage(from, message)
+	RequestChannel <- message
 }
 
 // HandleMessage - Handles the messages from the other servers
@@ -453,13 +450,6 @@ func HandleMessage(msg []byte) {
 			AbcMessage types.AbcMessage
 			From       int
 		}{AbcMessage: *abcMessage, From: message.From}
-	}
-}
-
-// Broadcast - Broadcasts a message to all other servers
-func BroadcastClients(message types.Reply) {
-	for i := 0; i < variables.Clients; i++ {
-		ReplyClient(message, i)
 	}
 }
 

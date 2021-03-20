@@ -76,7 +76,7 @@ func MultiValuedConsensus(mvcid int, v []byte) {
 		c := <-BCAnswer[mvcid]
 
 		if c == 0 {
-			logger.OutLogger.Print(mvcid, ".MVC decide-", variables.DEFAULT, "\n")
+			logger.OutLogger.Print(mvcid, ".MVC: decide-", variables.DEFAULT, "\n")
 			MVCAnswer[mvcid] <- variables.DEFAULT
 			return
 		}
@@ -85,7 +85,7 @@ func MultiValuedConsensus(mvcid int, v []byte) {
 			counter, dict := findOccurrences(fillVector(vect))
 			for k, v := range counter {
 				if v >= (variables.N - (2 * variables.F)) {
-					logger.OutLogger.Print(mvcid, ".MVC decide-", dict[k], "\n")
+					logger.OutLogger.Print(mvcid, ".MVC: decide-", dict[k], "\n")
 					MVCAnswer[mvcid] <- dict[k]
 					return
 				}
