@@ -20,8 +20,8 @@ var (
 
 // SendRBInit - Sends the INIT message
 func SendRBInit(num int, initVal []byte) {
-	broadcastAll(types.NewRbMessage(num, "INIT", "", variables.ID, initVal))
-	broadcastAll(types.NewRbMessage(num, "ECHO", "", variables.ID, initVal))
+	broadcastAll(types.NewRbMessage(num, "INIT", "ABC", variables.ID, initVal))
+	broadcastAll(types.NewRbMessage(num, "ECHO", "ABC", variables.ID, initVal))
 
 	initial[variables.ID][num] = initVal
 
@@ -61,7 +61,7 @@ func ReliableBroadcastAbc() {
 			}
 
 			initial[instance][num] = message.RbMessage.Value
-			broadcastAll(types.NewRbMessage(num, "ECHO", "", instance, initial[instance][num]))
+			broadcastAll(types.NewRbMessage(num, "ECHO", "ABC", instance, initial[instance][num]))
 
 			echo[instance][num][variables.ID] = initial[instance][num]
 			sentEcho[instance][num] = true
@@ -83,14 +83,14 @@ func ReliableBroadcastAbc() {
 			counter, dict := CountMessages(echo[instance][num])
 			for k, v := range counter {
 				if v >= ((variables.N+variables.F)/2) && !sentEcho[instance][num] { // Step 1
-					broadcastAll(types.NewRbMessage(num, "ECHO", "", instance, dict[k]))
+					broadcastAll(types.NewRbMessage(num, "ECHO", "ABC", instance, dict[k]))
 
 					echo[instance][num][variables.ID] = dict[k]
 					sentEcho[instance][num] = true
 					logger.OutLogger.Print(num, ".RB-ABC: ECHO->ECHO ", instance, "\n")
 
 				} else if v >= ((variables.N+variables.F)/2) && !sentReady[instance][num] { // Step 2
-					broadcastAll(types.NewRbMessage(num, "READY", "", instance, dict[k]))
+					broadcastAll(types.NewRbMessage(num, "READY", "ABC", instance, dict[k]))
 
 					ready[instance][num][variables.ID] = dict[k]
 					sentReady[instance][num] = true
@@ -119,14 +119,14 @@ func ReliableBroadcastAbc() {
 					logger.OutLogger.Print(num, ".RB-ABC: accept-", instance, "\n")
 
 				} else if v >= (variables.F+1) && !sentEcho[instance][num] { // Step 1
-					broadcastAll(types.NewRbMessage(num, "ECHO", "", instance, dict[k]))
+					broadcastAll(types.NewRbMessage(num, "ECHO", "ABC", instance, dict[k]))
 
 					echo[instance][num][variables.ID] = dict[k]
 					sentEcho[instance][num] = true
 					logger.OutLogger.Print(num, ".RB-ABC: READY->ECHO ", instance, "\n")
 
 				} else if v >= (variables.F+1) && !sentReady[instance][num] { // Step 2
-					broadcastAll(types.NewRbMessage(num, "READY", "", instance, dict[k]))
+					broadcastAll(types.NewRbMessage(num, "READY", "ABC", instance, dict[k]))
 
 					ready[instance][num][variables.ID] = dict[k]
 					sentReady[instance][num] = true

@@ -10,6 +10,9 @@ var (
 	// F - Number of faulty processors
 	F int
 
+	// Byzantine - If the processor is byzantine or not
+	Byzantine bool
+
 	// Clients - Size of Clients Set
 	Clients int
 
@@ -25,11 +28,20 @@ func Initialize(id int, n int, c int, rem int) {
 	ID = id
 	N = n
 	F = (N - 1) / 3
+
+	if ID < F {
+		Byzantine = true
+	} else {
+		Byzantine = false
+	}
+
 	Clients = c
+
 	if rem == 1 {
 		Remote = true
 	} else {
 		Remote = false
 	}
+
 	DEFAULT = []byte("")
 }

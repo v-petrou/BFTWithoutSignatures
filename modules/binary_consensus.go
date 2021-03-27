@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
 	"BFTWithoutSignatures/messenger"
 	"BFTWithoutSignatures/types"
@@ -151,6 +152,10 @@ func BvBroadcast(identifier int, initVal uint) {
 }
 
 func broadcast(tag string, bcMessage types.BcMessage) {
+	if (config.Scenario == "BC_ATTACK0") && (variables.Byzantine) {
+		bcMessage.Value = 0
+	}
+
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(bcMessage)

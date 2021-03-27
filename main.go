@@ -36,13 +36,16 @@ func initializer(id int, n int, clients int, scenario int, rem int) {
 
 	messenger.InitializeMessenger()
 	messenger.Subscribe()
+
+	if (config.Scenario == "IDLE") && (variables.Byzantine) {
+		return
+	}
+
 	messenger.TransmitMessages()
 
 	modules.InitiateAtomicBroadcast()
 	time.Sleep(2 * time.Second) // Wait 2s before start accepting requests to initiate all maps
 	modules.RequestHandler()
-
-	cleanup()
 }
 
 func cleanup() {
@@ -86,6 +89,7 @@ func main() {
 		remote, _ := strconv.Atoi(args[4])
 
 		initializer(id, n, clients, scenario, remote)
+		cleanup()
 
 		done := make(chan interface{}) // To keep the server running
 		<-done

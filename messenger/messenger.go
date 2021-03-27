@@ -202,14 +202,14 @@ func Broadcast(message types.Message) {
 			continue // Not myself
 		}
 
-		if config.Scenario == "NORMAL" {
-			MessageChannel[i] <- message
-		} else {
+		if config.Scenario == "FAIL" {
 			timeout := time.NewTicker(500 * time.Millisecond)
 			select {
 			case MessageChannel[i] <- message:
 			case <-timeout.C:
 			}
+		} else {
+			MessageChannel[i] <- message
 		}
 	}
 }
