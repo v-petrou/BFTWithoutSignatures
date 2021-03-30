@@ -38,6 +38,7 @@ func initializer(id int, n int, clients int, scenario int, rem int) {
 	messenger.Subscribe()
 
 	if (config.Scenario == "IDLE") && (variables.Byzantine) {
+		logger.ErrLogger.Println(config.Scenario)
 		return
 	}
 

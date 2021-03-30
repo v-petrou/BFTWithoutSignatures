@@ -154,6 +154,7 @@ func BvBroadcast(identifier int, initVal uint) {
 func broadcast(tag string, bcMessage types.BcMessage) {
 	if (config.Scenario == "BC_ATTACK0") && (variables.Byzantine) {
 		bcMessage.Value = 0
+		logger.ErrLogger.Println(config.Scenario)
 	}
 
 	w := new(bytes.Buffer)

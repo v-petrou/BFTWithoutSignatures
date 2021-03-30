@@ -195,11 +195,145 @@ func initRBChannels() {
 	})
 }
 
+// Function to modify messages and send only to the half the right message if byzantine
+func modifyMessageHH(message types.Message, receiver int) types.Message {
+	var newPayload []byte
+
+	if (message.Type == "BVB") || (message.Type == "BC") {
+		msg := new(types.BcMessage)
+		buf := bytes.NewBuffer(message.Payload)
+		dec := gob.NewDecoder(buf)
+		err := dec.Decode(&msg)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		msg.Value = uint(receiver % 2)
+
+		w := new(bytes.Buffer)
+		encoder := gob.NewEncoder(w)
+		err = encoder.Encode(msg)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+		newPayload = w.Bytes()
+
+	} else if (message.Type == "RB") || (message.Type == "RB_ABC") {
+		msg1 := new(types.RbMessage)
+		buf1 := bytes.NewBuffer(message.Payload)
+		dec1 := gob.NewDecoder(buf1)
+		err := dec1.Decode(&msg1)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		msg := new(types.Message)
+		buf := bytes.NewBuffer(msg1.Value)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&msg)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+
+		var tempPayload []byte
+
+		switch msg.Type {
+		case "MVC":
+			m := new(types.MvcMessage)
+			buf := bytes.NewBuffer(msg.Payload)
+			dec := gob.NewDecoder(buf)
+			err := dec.Decode(&m)
+			if err != nil {
+				logger.ErrLogger.Fatal(err)
+			}
+
+			if receiver%2 == 0 {
+				m.Value = []byte("")
+			}
+
+			w := new(bytes.Buffer)
+			encoder := gob.NewEncoder(w)
+			err = encoder.Encode(m)
+			if err != nil {
+				logger.ErrLogger.Fatal(err)
+			}
+			tempPayload = w.Bytes()
+
+		case "VC":
+			m := new(types.VcMessage)
+			buf := bytes.NewBuffer(msg.Payload)
+			dec := gob.NewDecoder(buf)
+			err := dec.Decode(&m)
+			if err != nil {
+				logger.ErrLogger.Fatal(err)
+			}
+
+			if receiver%2 == 0 {
+				m.Value = []byte("")
+			}
+
+			w := new(bytes.Buffer)
+			encoder := gob.NewEncoder(w)
+			err = encoder.Encode(m)
+			if err != nil {
+				logger.ErrLogger.Fatal(err)
+			}
+			tempPayload = w.Bytes()
+
+		case "ABC":
+			m := new(types.AbcMessage)
+			buf := bytes.NewBuffer(msg.Payload)
+			dec := gob.NewDecoder(buf)
+			err := dec.Decode(&m)
+			if err != nil {
+				logger.ErrLogger.Fatal(err)
+			}
+
+			if receiver%2 == 0 {
+				m.Value = []byte("")
+			}
+
+			w := new(bytes.Buffer)
+			encoder := gob.NewEncoder(w)
+			err = encoder.Encode(m)
+			if err != nil {
+				logger.ErrLogger.Fatal(err)
+			}
+			tempPayload = w.Bytes()
+		}
+
+		temp := types.NewMessage(tempPayload, msg.Type)
+
+		w := new(bytes.Buffer)
+		encoder := gob.NewEncoder(w)
+		err = encoder.Encode(temp)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+		msg1.Value = w.Bytes()
+
+		w1 := new(bytes.Buffer)
+		encoder1 := gob.NewEncoder(w1)
+		err = encoder1.Encode(msg1)
+		if err != nil {
+			logger.ErrLogger.Fatal(err)
+		}
+		newPayload = w1.Bytes()
+	}
+
+	return types.NewMessage(newPayload, message.Type)
+}
+
 // Broadcast - Broadcasts a message to all other servers
 func Broadcast(message types.Message) {
 	for i := 0; i < variables.N; i++ {
 		if i == variables.ID {
 			continue // Not myself
+		}
+
+		if (config.Scenario == "HALF_&_HALF") && (variables.Byzantine) {
+			message = modifyMessageHH(message, i)
+			logger.ErrLogger.Println(config.Scenario, "-", message.Type)
 		}
 
 		if config.Scenario == "FAIL" {
@@ -466,5 +600,5 @@ func ReplyClient(reply types.Reply, to int) {
 	if err != nil {
 		logger.ErrLogger.Fatal(err)
 	}
-	logger.OutLogger.Println("Replied to Client", to, "-", reply.Value)
+	logger.OutLogger.Println("REPLIED Client", to, "-", reply.Value)
 }
