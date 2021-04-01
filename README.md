@@ -80,7 +80,7 @@ the two messages in the same order.
 
 ## Installation
 ### Golang
-If you have not already installed [Golang](https://golang.org/doc/install) follow the instructions here.
+If you have not already installed **Golang** follow the instructions [here](https://golang.org/doc/install).
 ### Clone Repository
 ```bash
 cd ~/go/src/
