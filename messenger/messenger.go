@@ -195,6 +195,38 @@ func initRBChannels() {
 	})
 }
 
+// Function to modify BC messages if byzantine
+func modifyMessageBC(message types.Message, receiver int) types.Message {
+	msg := new(types.BcMessage)
+	buf := bytes.NewBuffer(message.Payload)
+	dec := gob.NewDecoder(buf)
+	err := dec.Decode(&msg)
+	if err != nil {
+		logger.ErrLogger.Fatal(err)
+	}
+
+	switch msg.Tag % 3 {
+	case 0:
+		msg.Value = uint(receiver % 2)
+	case 1:
+		msg.Value = uint(0)
+	case 2:
+		msg.Value = uint(1)
+	}
+
+	logger.ErrLogger.Print(config.Scenario, ": (", message.Type, ") ", receiver, " --> [",
+		msg.Tag, ",", msg.Value, "]\n")
+
+	w := new(bytes.Buffer)
+	encoder := gob.NewEncoder(w)
+	err = encoder.Encode(msg)
+	if err != nil {
+		logger.ErrLogger.Fatal(err)
+	}
+
+	return types.NewMessage(w.Bytes(), message.Type)
+}
+
 // Function to modify messages and send only to the half the right message if byzantine
 func modifyMessageHH(message types.Message, receiver int) types.Message {
 	var newPayload []byte
@@ -209,6 +241,9 @@ func modifyMessageHH(message types.Message, receiver int) types.Message {
 		}
 
 		msg.Value = uint(receiver % 2)
+
+		logger.ErrLogger.Print(config.Scenario, ": (", message.Type, ") ", receiver, " --> [",
+			msg.Tag, ",", msg.Value, "]\n")
 
 		w := new(bytes.Buffer)
 		encoder := gob.NewEncoder(w)
@@ -248,8 +283,13 @@ func modifyMessageHH(message types.Message, receiver int) types.Message {
 			}
 
 			if receiver%2 == 0 {
-				m.Value = []byte("")
+				m.Value = []byte("0")
+			} else {
+				m.Value = []byte("1")
 			}
+
+			logger.ErrLogger.Print(config.Scenario, ": (", msg.Type, ") ", receiver, " --> [",
+				m.Cid, ",", m.Value, "]\n")
 
 			w := new(bytes.Buffer)
 			encoder := gob.NewEncoder(w)
@@ -269,8 +309,13 @@ func modifyMessageHH(message types.Message, receiver int) types.Message {
 			}
 
 			if receiver%2 == 0 {
-				m.Value = []byte("")
+				m.Value = []byte("0")
+			} else {
+				m.Value = []byte("1")
 			}
+
+			logger.ErrLogger.Print(config.Scenario, ": (", msg.Type, ") ", receiver, " --> [",
+				m.Vcid, ",", m.Value, "]\n")
 
 			w := new(bytes.Buffer)
 			encoder := gob.NewEncoder(w)
@@ -290,8 +335,13 @@ func modifyMessageHH(message types.Message, receiver int) types.Message {
 			}
 
 			if receiver%2 == 0 {
-				m.Value = []byte("")
+				m.Value = []byte("0")
+			} else {
+				m.Value = []byte("1")
 			}
+
+			logger.ErrLogger.Print(config.Scenario, ": (", msg.Type, ") ", receiver, " --> [",
+				m.Num, ",", m.Value, "]\n")
 
 			w := new(bytes.Buffer)
 			encoder := gob.NewEncoder(w)
@@ -331,9 +381,14 @@ func Broadcast(message types.Message) {
 			continue // Not myself
 		}
 
+		// Modify message before sending it, in case of a special scenario
+		if (config.Scenario == "BC_ATTACK") && (variables.Byzantine) &&
+			((message.Type == "BVB") || (message.Type == "BC")) {
+			message = modifyMessageBC(message, i)
+		}
+
 		if (config.Scenario == "HALF_&_HALF") && (variables.Byzantine) {
 			message = modifyMessageHH(message, i)
-			logger.ErrLogger.Println(config.Scenario, "-", message.Type)
 		}
 
 		if config.Scenario == "FAIL" {

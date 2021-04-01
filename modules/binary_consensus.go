@@ -1,7 +1,6 @@
 package modules
 
 import (
-	"BFTWithoutSignatures/config"
 	"BFTWithoutSignatures/logger"
 	"BFTWithoutSignatures/messenger"
 	"BFTWithoutSignatures/types"
@@ -152,11 +151,6 @@ func BvBroadcast(identifier int, initVal uint) {
 }
 
 func broadcast(tag string, bcMessage types.BcMessage) {
-	if (config.Scenario == "BC_ATTACK0") && (variables.Byzantine) {
-		bcMessage.Value = 0
-		logger.ErrLogger.Println(config.Scenario)
-	}
-
 	w := new(bytes.Buffer)
 	encoder := gob.NewEncoder(w)
 	err := encoder.Encode(bcMessage)
@@ -164,15 +158,11 @@ func broadcast(tag string, bcMessage types.BcMessage) {
 		logger.ErrLogger.Fatal(err)
 	}
 
-	var message types.Message
 	if tag == "EST" {
-		message = types.NewMessage(w.Bytes(), "BVB")
+		go messenger.Broadcast(types.NewMessage(w.Bytes(), "BVB"))
 	} else if tag == "AUX" {
-		message = types.NewMessage(w.Bytes(), "BC")
-	} else {
-		logger.ErrLogger.Fatal("Wrong message type in Binary Consensus Broadcast")
+		go messenger.Broadcast(types.NewMessage(w.Bytes(), "BC"))
 	}
-	go messenger.Broadcast(message)
 }
 
 // TODO: implement a more Byzantine Tolerant Common-Coin algorithm

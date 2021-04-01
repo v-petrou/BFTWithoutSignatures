@@ -123,9 +123,9 @@ bash ~/go/src/BFTWithoutSignatures/scripts/kill.sh
 - [x] Multi-Valued Consensus
 - [x] Vector Consensus
 - [x] Atomic Broadcast
+- [x] Client-Request Handler
 ### TODO
 - [ ] Common-Coin
-- [ ] Client-Request Handler
 
 
 ## References
