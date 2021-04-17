@@ -1,5 +1,7 @@
 package variables
 
+import "sync"
+
 var (
 	// ID - This processor's id.
 	ID int
@@ -21,6 +23,11 @@ var (
 
 	// DEFAULT - The default value that is used in the algorithms
 	DEFAULT []byte
+
+	// Server metrics regarding the experiment evaluation
+	MsgComplexity int
+	MsgSize       int64
+	MsgMutex      sync.RWMutex
 )
 
 // Initialize - Variables initializer method
@@ -44,4 +51,8 @@ func Initialize(id int, n int, c int, rem int) {
 	}
 
 	DEFAULT = []byte("")
+
+	MsgComplexity = 0
+	MsgSize = 0
+	MsgMutex = sync.RWMutex{}
 }

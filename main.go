@@ -59,6 +59,15 @@ func cleanup() {
 		syscall.SIGQUIT)
 	go func() {
 		for range terminate {
+			if (config.Scenario == "IDLE") && (variables.Byzantine) {
+				logger.OutLogger.Printf("\n\nMessage Complexity: 0.00 msgs\nMessage Size: 0.00 MB\n\n")
+			} else {
+				logger.OutLogger.Printf(
+					"\n\nMessage Complexity: %f msgs\nMessage Size: %f MB\n\n",
+					float64(variables.MsgComplexity/modules.Aid),
+					float64(float64(variables.MsgSize/int64(modules.Aid))/1000000))
+			}
+
 			for i := 0; i < variables.N; i++ {
 				if i == variables.ID {
 					continue // Not myself
@@ -96,6 +105,6 @@ func main() {
 		<-done
 
 	} else {
-		log.Fatal("Arguments should be '<id> <n> <clients> <scenario> <remote>'")
+		log.Fatal("Arguments should be '<ID> <N> <Clients> <Scenario> <Remote>'")
 	}
 }

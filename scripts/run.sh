@@ -1,7 +1,7 @@
 #!/bin/bash
 
 N=10
-CLIENTS=2
+CLIENTS=20
 SCEN=0
 REM=0
 

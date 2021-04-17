@@ -391,14 +391,10 @@ func Broadcast(message types.Message) {
 			message = modifyMessageHH(message, i)
 		}
 
-		if config.Scenario == "FAIL" {
-			timeout := time.NewTicker(500 * time.Millisecond)
-			select {
-			case MessageChannel[i] <- message:
-			case <-timeout.C:
-			}
-		} else {
-			MessageChannel[i] <- message
+		timeout := time.NewTicker(500 * time.Millisecond)
+		select {
+		case MessageChannel[i] <- message:
+		case <-timeout.C:
 		}
 	}
 }
@@ -428,6 +424,11 @@ func TransmitMessages() {
 					logger.ErrLogger.Fatal(err)
 				}
 				logger.OutLogger.Println("SENT", message.Type, "to", i)
+
+				variables.MsgMutex.Lock()
+				variables.MsgComplexity++
+				variables.MsgSize += int64(len(w.Bytes()))
+				variables.MsgMutex.Unlock()
 			}
 		}(i)
 	}
@@ -656,4 +657,9 @@ func ReplyClient(reply types.Reply, to int) {
 		logger.ErrLogger.Fatal(err)
 	}
 	logger.OutLogger.Println("REPLIED Client", to, "-", reply.Value)
+
+	variables.MsgMutex.Lock()
+	variables.MsgComplexity++
+	variables.MsgSize += int64(len(w.Bytes()))
+	variables.MsgMutex.Unlock()
 }
