@@ -12,7 +12,11 @@ import (
 
 var (
 	// Delivered - Channel to receive delivered messages from ABC
-	Delivered = make(chan [][]byte)
+	Delivered = make(chan struct {
+		Id    int
+		Value [][]byte
+	})
+	Aid = 0
 
 	// Array - The array that has to be in consensus
 	Array = make([]rune, 0)
@@ -30,7 +34,7 @@ func RequestHandler() {
 	// Gets the delivered result from ABC, appends it in the Array and replies to the client
 	go func() {
 		for message := range Delivered {
-			for _, v := range message {
+			for _, v := range message.Value {
 				var m types.ClientMessage
 				buffer := bytes.NewBuffer(v)
 				decoder := gob.NewDecoder(buffer)
@@ -44,8 +48,8 @@ func RequestHandler() {
 				go messenger.ReplyClient(types.NewReplyMessage(m.Num), m.Cid)
 			}
 
+			Aid = message.Id
 			logger.OutLogger.Printf("%d.REQH: array-%c\n", Aid, Array)
-
 			log.Printf("%d | %d.REQH: array (%d) - %c\n", variables.ID, Aid, len(Array), Array)
 		}
 	}()

@@ -18,15 +18,14 @@ import (
 // Initializer - Method that initializes all required processes
 func initializer(id int, n int, clients int, scenario int, rem int) {
 	variables.Initialize(id, n, clients, rem)
-	logger.InitializeLogger("./logs/out/", "./logs/error/")
-
+	config.InitializeScenario(scenario)
 	if variables.Remote {
 		config.InitializeIP()
 	} else {
 		config.InitializeLocal()
 	}
-	config.InitializeScenario(scenario)
 
+	logger.InitializeLogger("./logs/out/", "./logs/error/")
 	logger.OutLogger.Print(
 		"ID:", variables.ID, " | N:", variables.N, " | F:", variables.F, " | Clients:",
 		variables.Clients, " | Scenario:", config.Scenario, " | Remote:", variables.Remote, "\n\n",
@@ -36,13 +35,12 @@ func initializer(id int, n int, clients int, scenario int, rem int) {
 
 	messenger.InitializeMessenger()
 	messenger.Subscribe()
+	messenger.TransmitMessages()
 
 	if (config.Scenario == "IDLE") && (variables.Byzantine) {
 		logger.ErrLogger.Println(config.Scenario)
 		return
 	}
-
-	messenger.TransmitMessages()
 
 	modules.InitiateAtomicBroadcast()
 	time.Sleep(2 * time.Second) // Wait 2s before start accepting requests to initiate all maps
@@ -60,12 +58,16 @@ func cleanup() {
 	go func() {
 		for range terminate {
 			if (config.Scenario == "IDLE") && (variables.Byzantine) {
-				logger.OutLogger.Printf("\n\nMessage Complexity: 0.00 msgs\nMessage Size: 0.00 MB\n\n")
+				logger.OutLogger.Printf("\n\nMessage Complexity: 0.00 msgs\nMessage Size: 0.000 MB\n\n")
 			} else {
-				logger.OutLogger.Printf(
-					"\n\nMessage Complexity: %f msgs\nMessage Size: %f MB\n\n",
-					float64(variables.MsgComplexity/modules.Aid),
-					float64(float64(variables.MsgSize/int64(modules.Aid))/1000000))
+				if modules.Aid == 0 {
+					logger.OutLogger.Printf("\n\nMessage Complexity: 0.00 msgs\nMessage Size: 0.000 MB\n\n")
+				} else {
+					logger.OutLogger.Printf(
+						"\n\nMessage Complexity: %.2f msgs\nMessage Size: %.3f MB\n\n",
+						float64(variables.MsgComplexity/modules.Aid),
+						float64(float64(variables.MsgSize/int64(modules.Aid))/1000000))
+				}
 			}
 
 			for i := 0; i < variables.N; i++ {

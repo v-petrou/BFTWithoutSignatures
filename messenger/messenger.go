@@ -391,7 +391,7 @@ func Broadcast(message types.Message) {
 			message = modifyMessageHH(message, i)
 		}
 
-		timeout := time.NewTicker(500 * time.Millisecond)
+		timeout := time.NewTicker(5 * time.Second)
 		select {
 		case MessageChannel[i] <- message:
 		case <-timeout.C:
