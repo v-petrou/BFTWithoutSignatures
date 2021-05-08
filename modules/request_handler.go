@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"log"
+	"strconv"
 )
 
 var (
@@ -20,6 +21,8 @@ var (
 
 	// Array - The array that has to be in consensus
 	Array = make([]rune, 0)
+
+	cidNum = make([]string, 0)
 )
 
 // RequestHandler - The module that handles requests received from clients and replies to them
@@ -43,9 +46,12 @@ func RequestHandler() {
 					logger.ErrLogger.Fatal(err)
 				}
 
-				Array = append(Array, m.Value)
-
-				go messenger.ReplyClient(types.NewReplyMessage(m.Num), m.Cid)
+				id := (strconv.Itoa(m.Cid) + " " + strconv.Itoa(m.Num))
+				if notStringInSlice(id, cidNum) {
+					cidNum = append(cidNum, id)
+					Array = append(Array, m.Value)
+					go messenger.ReplyClient(types.NewReplyMessage(m.Num), m.Cid)
+				}
 			}
 
 			Aid = message.Id
@@ -53,4 +59,13 @@ func RequestHandler() {
 			log.Printf("%d | %d.REQH: array (%d) - %c\n", variables.ID, Aid, len(Array), Array)
 		}
 	}()
+}
+
+func notStringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return false
+		}
+	}
+	return true
 }

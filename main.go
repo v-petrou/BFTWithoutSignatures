@@ -18,6 +18,8 @@ import (
 // Initializer - Method that initializes all required processes
 func initializer(id int, n int, clients int, scenario int, rem int) {
 	variables.Initialize(id, n, clients, rem)
+	logger.InitializeLogger("./logs/out/", "./logs/error/")
+
 	config.InitializeScenario(scenario)
 	if variables.Remote {
 		config.InitializeIP()
@@ -25,7 +27,6 @@ func initializer(id int, n int, clients int, scenario int, rem int) {
 		config.InitializeLocal()
 	}
 
-	logger.InitializeLogger("./logs/out/", "./logs/error/")
 	logger.OutLogger.Print(
 		"ID:", variables.ID, " | N:", variables.N, " | F:", variables.F, " | Clients:",
 		variables.Clients, " | Scenario:", config.Scenario, " | Remote:", variables.Remote, "\n\n",
@@ -35,13 +36,13 @@ func initializer(id int, n int, clients int, scenario int, rem int) {
 
 	messenger.InitializeMessenger()
 	messenger.Subscribe()
-	messenger.TransmitMessages()
 
 	if (config.Scenario == "IDLE") && (variables.Byzantine) {
 		logger.ErrLogger.Println(config.Scenario)
 		return
 	}
 
+	messenger.TransmitMessages()
 	modules.InitiateAtomicBroadcast()
 	time.Sleep(2 * time.Second) // Wait 2s before start accepting requests to initiate all maps
 	modules.RequestHandler()

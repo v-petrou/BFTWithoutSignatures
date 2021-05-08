@@ -1,16 +1,16 @@
 #!/bin/bash
 
-INFO=$( cat $(ls /home/vasilis/logs/out/0_*) | grep 'ID:0' | cut -d" " -f4- | cut -d"|" -f2- )
+INFO=$( cat $(ls ~/logs/out/0_*) | grep 'ID:0' | cut -d" " -f4- | cut -d"|" -f2- )
 
-TEMP=$( cd /home/vasilis/logs/client && cat $(ls) | grep 'Operation Latency:' | cut -d" " -f4 )
+TEMP=$( cd ~/logs/client && cat $(ls) | grep 'Operation Latency:' | cut -d" " -f4 )
 OP="${TEMP// /$'\n'}"
 AVG_OP=$( echo "$OP" | awk -vx=0 '{x += $1} END {print x/NR}' )
 
-TEMP=$( cd /home/vasilis/logs/out && cat $(ls) | grep 'Message Complexity:' | cut -d" " -f3 )
+TEMP=$( cd ~/logs/out && cat $(ls) | grep 'Message Complexity:' | cut -d" " -f3 )
 COM="${TEMP// /$'\n'}"
 AVG_COM=$( echo "$COM" | awk -vx=0 '{x += $1} END {print x/NR}' )
 
-TEMP=$( cd /home/vasilis/logs/out && cat $(ls) | grep 'Message Size:' | cut -d" " -f3 )
+TEMP=$( cd ~/logs/out && cat $(ls) | grep 'Message Size:' | cut -d" " -f3 )
 SIZE="${TEMP// /$'\n'}"
 AVG_SIZE=$( echo "$SIZE" | awk -vx=0 '{x += $1} END {print x/NR}' )
 
