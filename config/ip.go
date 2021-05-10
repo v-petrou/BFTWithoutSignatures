@@ -5,9 +5,7 @@ import (
 	"strconv"
 )
 
-var address = []string{
-	"192.168.0.72",
-}
+var address = []string{}
 
 var (
 	// RepAddressesIP - Initialize the address of IP REP sockets
@@ -33,12 +31,12 @@ func InitializeIP() {
 	for i := 0; i < variables.N; i++ {
 		ad := i % len(address)
 
-		RepAddressesIP[i] = "tcp://*:" + strconv.Itoa(4000+(variables.ID*100)+i)
-		ReqAddressesIP[i] = "tcp://" + address[ad] + ":" + strconv.Itoa(4000+(i*100)+variables.ID)
+		RepAddressesIP[i] = "tcp://*:" + strconv.Itoa(27000+i+(variables.ID*variables.N))
+		ReqAddressesIP[i] = "tcp://" + address[ad] + ":" + strconv.Itoa(27000+variables.ID+(i*variables.N))
 	}
 	for i := 0; i < variables.Clients; i++ {
-		ServerAddressesIP[i] = "tcp://*:" + strconv.Itoa(7000+(variables.ID*100)+i)
-		ResponseAddressesIP[i] = "tcp://*:" + strconv.Itoa(10000+(variables.ID*100)+i)
+		ServerAddressesIP[i] = "tcp://*:" + strconv.Itoa(27015+i+(variables.ID*variables.Clients))
+		ResponseAddressesIP[i] = "tcp://*:" + strconv.Itoa(27065+i+(variables.ID*variables.Clients))
 	}
 }
 
