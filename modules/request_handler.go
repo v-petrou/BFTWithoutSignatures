@@ -30,7 +30,18 @@ func RequestHandler() {
 	// Accepts the requests from the clients and calls ABC
 	go func() {
 		for message := range messenger.RequestChannel {
-			AtomicBroadcast(message)
+			var m types.ClientMessage
+			buffer := bytes.NewBuffer(message)
+			decoder := gob.NewDecoder(buffer)
+			err := decoder.Decode(&m)
+			if err != nil {
+				logger.ErrLogger.Fatal(err)
+			}
+
+			id := (strconv.Itoa(m.Cid) + " " + strconv.Itoa(m.Num))
+			if notStringInSlice(id, cidNum) {
+				AtomicBroadcast(message)
+			}
 		}
 	}()
 
