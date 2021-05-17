@@ -25,7 +25,7 @@ var (
 
 // InitiateAtomicBroadcast - The method that is called to initiate the ABC module
 func InitiateAtomicBroadcast() {
-	aid = 0
+	aid = 1
 	num = 0
 	received = make(map[int]map[int][]byte, variables.N)
 	for i := 0; i < variables.N; i++ {

@@ -17,7 +17,7 @@ var (
 		Id    int
 		Value [][]byte
 	})
-	Aid = 0
+	Aid = 1
 
 	// Array - The array that has to be in consensus
 	Array = make([]rune, 0)

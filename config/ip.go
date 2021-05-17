@@ -5,7 +5,9 @@ import (
 	"strconv"
 )
 
-var address = []string{}
+var address0 = []string{}
+
+var address1 = []string{}
 
 var (
 	// RepAddressesIP - Initialize the address of IP REP sockets
@@ -28,15 +30,23 @@ func InitializeIP() {
 	ServerAddressesIP = make(map[int]string, variables.Clients)
 	ResponseAddressesIP = make(map[int]string, variables.Clients)
 
+	address := address1
+	if variables.N == 4 {
+		address = address0
+	}
+
 	for i := 0; i < variables.N; i++ {
-		ad := i % len(address)
+		ad := i
+		if i >= len(address) {
+			ad = (i % 2) + 2
+		}
 
 		RepAddressesIP[i] = "tcp://*:" + strconv.Itoa(27000+i+(variables.ID*variables.N))
 		ReqAddressesIP[i] = "tcp://" + address[ad] + ":" + strconv.Itoa(27000+variables.ID+(i*variables.N))
 	}
 	for i := 0; i < variables.Clients; i++ {
-		ServerAddressesIP[i] = "tcp://*:" + strconv.Itoa(27015+i+(variables.ID*variables.Clients))
-		ResponseAddressesIP[i] = "tcp://*:" + strconv.Itoa(27065+i+(variables.ID*variables.Clients))
+		ServerAddressesIP[i] = "tcp://*:" + strconv.Itoa(27250+i+(variables.ID*variables.Clients))
+		ResponseAddressesIP[i] = "tcp://*:" + strconv.Itoa(27625+i+(variables.ID*variables.Clients))
 	}
 }
 

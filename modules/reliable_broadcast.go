@@ -126,7 +126,7 @@ func sendToAll(rbMessage types.RbMessage) {
 	}
 
 	message := types.NewMessage(w.Bytes(), "RB")
-	go messenger.Broadcast(message)
+	messenger.Broadcast(message)
 }
 
 // CountMessages - Counts the messages received from RB

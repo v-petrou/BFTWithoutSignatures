@@ -146,5 +146,5 @@ func broadcastAll(rbMessage types.RbMessage) {
 	}
 
 	message := types.NewMessage(w.Bytes(), "RB_ABC")
-	go messenger.Broadcast(message)
+	messenger.Broadcast(message)
 }

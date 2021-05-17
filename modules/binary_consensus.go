@@ -159,9 +159,9 @@ func broadcast(tag string, bcMessage types.BcMessage) {
 	}
 
 	if tag == "EST" {
-		go messenger.Broadcast(types.NewMessage(w.Bytes(), "BVB"))
+		messenger.Broadcast(types.NewMessage(w.Bytes(), "BVB"))
 	} else if tag == "AUX" {
-		go messenger.Broadcast(types.NewMessage(w.Bytes(), "BC"))
+		messenger.Broadcast(types.NewMessage(w.Bytes(), "BC"))
 	}
 }
 

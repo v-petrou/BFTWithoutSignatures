@@ -61,14 +61,10 @@ func cleanup() {
 			if (config.Scenario == "IDLE") && (variables.Byzantine) {
 				logger.OutLogger.Printf("\n\nMessage Complexity: 0.00 msgs\nMessage Size: 0.000 MB\n\n")
 			} else {
-				if modules.Aid == 0 {
-					logger.OutLogger.Printf("\n\nMessage Complexity: 0.00 msgs\nMessage Size: 0.000 MB\n\n")
-				} else {
-					logger.OutLogger.Printf(
-						"\n\nMessage Complexity: %.2f msgs\nMessage Size: %.3f MB\n\n",
-						float64(variables.MsgComplexity/modules.Aid),
-						float64(float64(variables.MsgSize/int64(modules.Aid))/1000000))
-				}
+				logger.OutLogger.Printf(
+					"\n\nMessage Complexity: %.2f msgs\nMessage Size: %.3f MB\n\n",
+					float64(variables.MsgComplexity/modules.Aid),
+					float64(float64(variables.MsgSize/int64(modules.Aid))/1000000))
 			}
 
 			for i := 0; i < variables.N; i++ {
